@@ -1,18 +1,12 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2018 by the respective copyright holders.
  *
- * See the NOTICE file(s) distributed with this work for additional
- * information.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0
- *
- * SPDX-License-Identifier: EPL-2.0
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
  */
 package org.openhab.binding.pentair.internal.handler;
-
-import static org.openhab.binding.pentair.internal.PentairBindingConstants.INTELLIFLO_THING_TYPE;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -57,12 +51,14 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler {
     protected Thread thread;
     /** parser object - subclass needs to create/assign during connect */
     protected Parser parser;
-    /** polling job for pump status */
+    /** polling job for reconnecting */
     protected ScheduledFuture<?> pollingjob;
     /** ID to use when sending commands on Pentair bus - subclass needs to assign based on configuration parameter */
     protected int id;
     /** array to keep track of IDs seen on the Pentair bus that do not correlate to a configured Thing object */
     protected ArrayList<Integer> unregistered = new ArrayList<>();
+
+    protected ConnectState connectstate;
 
     /**
      * Gets pentair bus id
@@ -72,6 +68,13 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler {
     public int getId() {
         return id;
     }
+
+    private enum ConnectState {
+        CONNECTING,
+        DISCONNECTED,
+        CONNECTED,
+        INIT
+    };
 
     private enum ParserState {
         WAIT_SOC,
@@ -86,6 +89,7 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler {
      */
     PentairBaseBridgeHandler(Bridge bridge) {
         super(bridge);
+        connectstate = ConnectState.INIT;
     }
 
     @Override
@@ -99,9 +103,15 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler {
     public void initialize() {
         logger.debug("initializing Pentair Bridge handler.");
 
-        connect();
+        connectstate = ConnectState.CONNECTING;
+        if (connect() != 0) {
+            return;
+        }
+        connectstate = ConnectState.CONNECTED;
+        // successfully connected with current configuration, so start job to check for reconnection in case it gets
+        // disconnected
 
-        pollingjob = scheduler.scheduleWithFixedDelay(new PumpStatus(), 10, 120, TimeUnit.SECONDS);
+        pollingjob = scheduler.scheduleWithFixedDelay(new ReconnectIO(), 10, 30, TimeUnit.SECONDS);
     }
 
     @Override
@@ -113,18 +123,52 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler {
 
     /**
      * Abstract method for creating connection. Must be implemented in subclass.
+     * Return 0 if all goes well.
+     *
+     * @throws Exception
      */
-    protected abstract void connect();
+    protected abstract int connect();
+
+    private int _connect() {
+        int ret;
+
+        connectstate = ConnectState.CONNECTING;
+
+        ret = connect();
+        if (ret == 0) {
+            connectstate = ConnectState.CONNECTED;
+        } else {
+            connectstate = ConnectState.DISCONNECTED;
+        }
+
+        return ret;
+    }
 
     /**
      * Abstract method for disconnect. Must be implemented in subclass
      */
     protected abstract void disconnect();
 
+    private void _disconnect() {
+        disconnect();
+        connectstate = ConnectState.DISCONNECTED;
+    }
+
+    // Job to pull to try and reconnect upon being disconnected. Note this should only be started on an initial
+    // successful connection which would mean the configuration settings have been set correctly.
+    class ReconnectIO implements Runnable {
+        @Override
+        public void run() {
+            if (connectstate == ConnectState.DISCONNECTED) {
+                _connect();
+            }
+        }
+    }
+
     /**
      * Helper function to find a Thing assigned to this bridge with a specific pentair bus id.
      *
-     * @param id Pentiar bus id
+     * @param id Pentair bus id
      * @return Thing object. null if id is not found.
      */
     public Thing findThing(int id) {
@@ -200,40 +244,6 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler {
 
         return i;
     }
-
-    /**
-     * Job to send pump query status packages to all Intelliflo Pump things in order to see the status.
-     * Note: From the internet is seems some FW versions of EasyTouch controllers send this automatically and this the
-     * pump status packets can just be snooped, however my controller version does not do this. No harm in sending.
-     *
-     * @author Jeff James
-     *
-     */
-    class PumpStatus implements Runnable {
-        @Override
-        public void run() {
-            List<Thing> things = getThing().getThings();
-
-            // FF 00 FF A5 00 60 10 07 00 01 1C
-            byte[] packet = { (byte) 0xA5, (byte) 0x00, (byte) 0x00, (byte) id, (byte) 0x07, (byte) 0x00 };
-
-            PentairPacket p = new PentairPacket(packet);
-
-            for (Thing t : things) {
-                if (!t.getThingTypeUID().equals(INTELLIFLO_THING_TYPE)) {
-                    continue;
-                }
-
-                p.setDest(((PentairIntelliFloHandler) t.getHandler()).id);
-                writePacket(p);
-                try {
-                    Thread.sleep(300); // make sure each pump has time to respond
-                } catch (InterruptedException e) {
-                    break;
-                }
-            }
-        }
-    };
 
     /**
      * Implements the thread to read and parse the input stream. Once a packet can be indentified, it locates the
@@ -321,15 +331,15 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler {
 
                             thing = findThing(p.getSource());
                             if (thing == null) {
-                                if ((p.getSource() >> 8) == 0x02) { // control panels are 0x3*, don't treat as an
+                                if ((p.getSource() >> 4) == 0x02) { // control panels are 0x2*, don't treat as an
                                                                     // unregistered device
-                                    logger.trace("Command from control panel device ({}): {}", p.getSource(), p);
+                                    logger.debug("Command from control panel device ({}): {}", p.getSource(), p);
                                 } else if (!unregistered.contains(p.getSource())) { // if not yet seen, print out log
                                                                                     // message once
                                     logger.info("Command from unregistered device ({}): {}", p.getSource(), p);
                                     unregistered.add(p.getSource());
                                 } else {
-                                    logger.trace("Command from unregistered device ({}): {}", p.getSource(), p);
+                                    logger.debug("Command from unregistered device ({}): {}", p.getSource(), p);
                                 }
                                 break;
                             }
@@ -412,9 +422,10 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler {
                 }
             } catch (IOException e) {
                 logger.trace("I/O error while reading from stream: {}", e.getMessage());
-                disconnect();
+                _disconnect();
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
             } catch (EOBException e) {
+                logger.trace("EOB Exception: {}", e.getMessage());
                 // EOB Exception is used to exit the parser loop if full message is not in buffer.
             }
 
@@ -432,6 +443,9 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler {
             byte[] preamble = { (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0x00, (byte) 0xFF };
             byte[] buf = new byte[5 + p.getLength() + 8]; // 5 is preamble, 8 is 6 bytes for header and 2 for checksum
 
+            if (writer == null) {
+                return;
+            }
             p.setSource(id);
 
             System.arraycopy(preamble, 0, buf, 0, 5);
@@ -447,6 +461,7 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler {
             writer.flush();
         } catch (IOException e) {
             logger.trace("I/O error while writing stream: {}", e);
+            _disconnect();
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
         }
     }

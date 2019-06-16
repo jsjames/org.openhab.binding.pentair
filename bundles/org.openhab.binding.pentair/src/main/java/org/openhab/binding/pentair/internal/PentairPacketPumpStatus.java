@@ -1,14 +1,10 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2018 by the respective copyright holders.
  *
- * See the NOTICE file(s) distributed with this work for additional
- * information.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0
- *
- * SPDX-License-Identifier: EPL-2.0
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
  */
 package org.openhab.binding.pentair.internal;
 
@@ -21,19 +17,21 @@ package org.openhab.binding.pentair.internal;
  */
 public class PentairPacketPumpStatus extends PentairPacket { // 15 byte packet format
 
-    protected static final int RUN = 4 + OFFSET;
-    protected static final int MODE = 5 + OFFSET; // Mode in pump status. Means something else in pump write/response?
-    protected static final int DRIVESTATE = 6 + OFFSET; // ?? Drivestate in pump status. Means something else in pump
-                                                        // write/response
-    protected static final int WATTSH = 7 + OFFSET;
-    protected static final int WATTSL = 8 + OFFSET;
-    protected static final int RPMH = 9 + OFFSET;
-    protected static final int RPML = 10 + OFFSET;
-    protected static final int PPC = 11 + OFFSET; // ??
-    protected static final int ERR = 13 + OFFSET;
-    protected static final int TIMER = 14 + OFFSET; // ?? Have to explore
-    protected static final int HOUR = 17 + OFFSET;
-    protected static final int MIN = 18 + OFFSET;
+    protected static final int RUN = STARTOFDATA;
+    protected static final int MODE = STARTOFDATA + 1; // Mode in pump status. Means something else in pump
+                                                       // write/response?
+    protected static final int DRIVESTATE = STARTOFDATA + 2; // ?? Drivestate in pump status. Means something else in
+                                                             // pump write/respoonse
+    protected static final int WATTSH = STARTOFDATA + 3;
+    protected static final int WATTSL = STARTOFDATA + 4;
+    protected static final int RPMH = STARTOFDATA + 5;
+    protected static final int RPML = STARTOFDATA + 6;
+    protected static final int GPM = STARTOFDATA + 7;
+    protected static final int PPC = STARTOFDATA + 8; // ?
+    protected static final int ERR = STARTOFDATA + 9;
+    protected static final int TIMER = STARTOFDATA + 10; // ?? Have to explore
+    protected static final int HOUR = STARTOFDATA + 13;
+    protected static final int MIN = STARTOFDATA + 14;
 
     /** pump is running */
     public boolean run;
@@ -71,8 +69,9 @@ public class PentairPacketPumpStatus extends PentairPacket { // 15 byte packet f
         run = (buf[RUN] == (byte) 0x0A);
         mode = buf[MODE];
         drivestate = buf[DRIVESTATE];
-        power = (buf[WATTSH] << 8) + buf[WATTSL];
-        rpm = (buf[RPMH] << 8) + buf[RPML];
+        power = ((buf[WATTSH] & 0xFF) * 256) + (buf[WATTSL] & 0xFF);
+        rpm = ((buf[RPMH] & 0xFF) * 256) + (buf[RPML] & 0xFF);
+
         ppc = buf[PPC];
         error = buf[ERR];
         timer = buf[TIMER];
