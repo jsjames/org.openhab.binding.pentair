@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<thing:thing-descriptions bindingId="pentair" 
+<thing:thing-descriptions bindingId="pentair"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0" xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 org.eclipse.smarthome.thing-description.xsd">
+	xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 org.eclipse.smarthome.thing-description.xsd">
 
-	<bridge-type id="pentair_serial_bridge">
-		<label>Serial Bridge</label>
+	<bridge-type id="serial_bridge">
+		<label>Pentair-RS485 Serial Bridge</label>
 		<description>This bridge is used when using a USB->RS485 interface.</description>
 		<config-description>
 			<parameter name="serialPort" type="text" required="true">

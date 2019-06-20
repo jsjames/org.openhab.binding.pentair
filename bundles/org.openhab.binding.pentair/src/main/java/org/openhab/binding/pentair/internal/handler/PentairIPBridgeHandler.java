@@ -1,14 +1,10 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2018 by the respective copyright holders.
  *
- * See the NOTICE file(s) distributed with this work for additional
- * information.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0
- *
- * SPDX-License-Identifier: EPL-2.0
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
  */
 package org.openhab.binding.pentair.internal.handler;
 
@@ -42,7 +38,7 @@ public class PentairIPBridgeHandler extends PentairBaseBridgeHandler {
     }
 
     @Override
-    protected synchronized void connect() {
+    protected synchronized int connect() {
         PentairIPBridgeConfig configuration = getConfigAs(PentairIPBridgeConfig.class);
 
         id = configuration.id;
@@ -51,15 +47,16 @@ public class PentairIPBridgeHandler extends PentairBaseBridgeHandler {
             socket = new Socket(configuration.address, configuration.port);
             reader = new BufferedInputStream(socket.getInputStream());
             writer = new BufferedOutputStream(socket.getOutputStream());
+
             logger.info("Pentair IPBridge connected to {}:{}", configuration.address, configuration.port);
         } catch (UnknownHostException e) {
             String msg = String.format("unknown host name: %s", configuration.address);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, msg);
-            return;
+            return -1;
         } catch (IOException e) {
             String msg = String.format("cannot open connection to %s", configuration.address);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, msg);
-            return;
+            return -2;
         }
 
         parser = new Parser();
@@ -71,6 +68,8 @@ public class PentairIPBridgeHandler extends PentairBaseBridgeHandler {
         } else {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Unable to connect");
         }
+
+        return 0;
     }
 
     @Override

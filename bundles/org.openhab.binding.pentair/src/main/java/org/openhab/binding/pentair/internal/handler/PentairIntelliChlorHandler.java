@@ -1,14 +1,10 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2018 by the respective copyright holders.
  *
- * See the NOTICE file(s) distributed with this work for additional
- * information.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0
- *
- * SPDX-License-Identifier: EPL-2.0
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
  */
 package org.openhab.binding.pentair.internal.handler;
 
@@ -18,6 +14,8 @@ import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
+import org.eclipse.smarthome.core.thing.ThingStatusDetail;
+import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.openhab.binding.pentair.internal.PentairBindingConstants;
@@ -36,6 +34,7 @@ import org.slf4j.LoggerFactory;
  */
 public class PentairIntelliChlorHandler extends PentairBaseThingHandler {
     private final Logger logger = LoggerFactory.getLogger(PentairIntelliChlorHandler.class);
+    private boolean waitStatusForOnline = false;
 
     protected PentairPacketIntellichlor pic3cur = new PentairPacketIntellichlor();
     protected PentairPacketIntellichlor pic4cur = new PentairPacketIntellichlor();
@@ -50,18 +49,41 @@ public class PentairIntelliChlorHandler extends PentairBaseThingHandler {
 
         id = 0; // Intellichlor doesn't have ID
 
-        updateStatus(ThingStatus.ONLINE);
+        goOnline();
     }
 
     @Override
     public void dispose() {
         logger.debug("Thing {} disposed.", getThing().getUID());
+
+        goOffline(ThingStatusDetail.NONE);
+    }
+
+    public void goOnline() {
+        logger.debug("Thing {} goOnline.", getThing().getUID());
+
+        waitStatusForOnline = true;
+    }
+
+    public void goOffline(ThingStatusDetail detail) {
+        logger.debug("Thing {} goOffline.", getThing().getUID());
+
+        updateStatus(ThingStatus.OFFLINE, detail);
+    }
+
+    @Override
+    public void bridgeStatusChanged(ThingStatusInfo bridgeStatusInfo) {
+        if (bridgeStatusInfo.getStatus() == ThingStatus.OFFLINE) {
+            goOffline(ThingStatusDetail.BRIDGE_OFFLINE);
+        } else if (bridgeStatusInfo.getStatus() == ThingStatus.ONLINE) {
+            goOnline();
+        }
     }
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         if (command instanceof RefreshType) {
-            logger.debug("IntelliChlor received refresh command");
+            logger.trace("IntelliChlor received refresh command");
             updateChannel(channelUID.getId(), null);
         }
     }
@@ -69,6 +91,11 @@ public class PentairIntelliChlorHandler extends PentairBaseThingHandler {
     @Override
     public void processPacketFrom(PentairPacket p) {
         PentairPacketIntellichlor pic = (PentairPacketIntellichlor) p;
+
+        if (waitStatusForOnline) {
+            updateStatus(ThingStatus.ONLINE);
+            waitStatusForOnline = false;
+        }
 
         switch (pic.getLength()) {
             case 3:
