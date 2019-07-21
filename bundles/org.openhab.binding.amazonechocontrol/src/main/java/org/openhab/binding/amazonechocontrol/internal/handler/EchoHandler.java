@@ -12,7 +12,46 @@
  */
 package org.openhab.binding.amazonechocontrol.internal.handler;
 
-import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.*;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_AMAZON_MUSIC;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_AMAZON_MUSIC_PLAY_LIST_ID;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_AMAZON_MUSIC_TRACK_ID;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_ASCENDING_ALARM;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_BLUETOOTH;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_BLUETOOTH_DEVICE_NAME;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_BLUETOOTH_MAC;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_EQUALIZER_BASS;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_EQUALIZER_MIDRANGE;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_EQUALIZER_TREBLE;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_IMAGE_URL;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_LAST_VOICE_COMMAND;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_MEDIA_LENGTH;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_MEDIA_PROGRESS;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_MEDIA_PROGRESS_TIME;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_MUSIC_PROVIDER_ID;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_NEXT_ALARM;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_NEXT_MUSIC_ALARM;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_NEXT_REMINDER;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_NEXT_TIMER;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_NOTIFICATION_VOLUME;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_PLAYER;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_PLAY_ALARM_SOUND;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_PLAY_MUSIC_VOICE_COMMAND;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_PLAY_ON_DEVICE;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_PROVIDER_DISPLAY_NAME;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_RADIO;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_RADIO_STATION_ID;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_REMIND;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_SHUFFLE;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_START_COMMAND;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_START_ROUTINE;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_SUBTITLE1;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_SUBTITLE2;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_TEXT_TO_SPEECH;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_TEXT_TO_SPEECH_VOLUME;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_TITLE;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.CHANNEL_VOLUME;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.DEVICE_PROPERTY_SERIAL_NUMBER;
+import static org.openhab.binding.amazonechocontrol.internal.AmazonEchoControlBindingConstants.FLASH_BRIEFING_COMMAND_PREFIX;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -20,8 +59,9 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -55,10 +95,14 @@ import org.eclipse.smarthome.core.thing.ThingUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
+import org.eclipse.smarthome.core.types.State;
 import org.eclipse.smarthome.core.types.UnDefType;
 import org.openhab.binding.amazonechocontrol.internal.Connection;
 import org.openhab.binding.amazonechocontrol.internal.ConnectionException;
 import org.openhab.binding.amazonechocontrol.internal.HttpException;
+import org.openhab.binding.amazonechocontrol.internal.channelhandler.ChannelHandler;
+import org.openhab.binding.amazonechocontrol.internal.channelhandler.ChannelHandlerAnnouncement;
+import org.openhab.binding.amazonechocontrol.internal.channelhandler.IAmazonThingHandler;
 import org.openhab.binding.amazonechocontrol.internal.jsons.JsonActivities.Activity;
 import org.openhab.binding.amazonechocontrol.internal.jsons.JsonActivities.Activity.Description;
 import org.openhab.binding.amazonechocontrol.internal.jsons.JsonAscendingAlarm.AscendingAlarmModel;
@@ -94,10 +138,10 @@ import com.google.gson.Gson;
  * @author Michael Geramb - Initial contribution
  */
 @NonNullByDefault
-public class EchoHandler extends BaseThingHandler {
+public class EchoHandler extends BaseThingHandler implements IAmazonThingHandler {
 
     private final Logger logger = LoggerFactory.getLogger(EchoHandler.class);
-    private Gson gson = new Gson();
+    private Gson gson;
     private @Nullable Device device;
     private Set<String> capabilities = new HashSet<>();
     private @Nullable AccountHandler account;
@@ -128,6 +172,7 @@ public class EchoHandler extends BaseThingHandler {
     private @Nullable JsonPlaylists playLists;
     private @Nullable JsonNotificationSound @Nullable [] alarmSounds;
     private @Nullable List<JsonMusicProvider> musicProviders;
+    private List<ChannelHandler> channelHandlers = new ArrayList<>();
 
     private @Nullable JsonNotificationResponse currentNotification;
     private @Nullable ScheduledFuture<?> currentNotifcationUpdateTimer;
@@ -136,8 +181,10 @@ public class EchoHandler extends BaseThingHandler {
     long mediaStartMs;
     String lastSpokenText = "";
 
-    public EchoHandler(Thing thing) {
+    public EchoHandler(Thing thing, Gson gson) {
         super(thing);
+        this.gson = gson;
+        channelHandlers.add(new ChannelHandlerAnnouncement(this, this.gson));
     }
 
     @Override
@@ -263,8 +310,14 @@ public class EchoHandler extends BaseThingHandler {
                 return;
             }
 
-            // Player commands
             String channelId = channelUID.getId();
+            for (ChannelHandler channelHandler : channelHandlers) {
+                if (channelHandler.tryHandleCommand(device, connection, channelId, command)) {
+                    return;
+                }
+            }
+
+            // Player commands
             if (channelId.equals(CHANNEL_PLAYER)) {
                 if (command == PlayPauseType.PAUSE || command == OnOffType.OFF) {
                     connection.command(device, "{\"type\":\"PauseCommand\"}");
@@ -375,7 +428,7 @@ public class EchoHandler extends BaseThingHandler {
                                 + ",\"contentFocusClientId\":\"Default\"}");
 
                     } else {
-                        Map<String, Object> parameters = new Hashtable<String, Object>();
+                        Map<String, Object> parameters = new HashMap<>();
                         parameters.put("value", volume);
                         connection.executeSequenceCommand(device, "Alexa.DeviceControls.Volume", parameters);
                     }
@@ -725,7 +778,8 @@ public class EchoHandler extends BaseThingHandler {
             this.ignoreVolumeChange = scheduler.schedule(this::stopIgnoreVolumeChange, 2000, TimeUnit.MILLISECONDS);
         }
         if (text.startsWith("<speak>") && text.endsWith("</speak>")) {
-            connection.sendAnnouncement(device, text, null, textToSpeechVolume, lastKnownVolume);
+            String bodyText = text.replaceAll("<[^>]+>", "");
+            connection.sendAnnouncement(device, text, bodyText, null, textToSpeechVolume, lastKnownVolume);
         } else {
             connection.textToSpeech(device, text, textToSpeechVolume, lastKnownVolume);
         }
@@ -860,6 +914,13 @@ public class EchoHandler extends BaseThingHandler {
                             }
                             if (StringUtils.startsWith(musicProviderId, "TUNEIN")) {
                                 musicProviderId = "TUNEIN";
+                            }
+                            if (StringUtils.startsWithIgnoreCase(musicProviderId, "iHeartRadio")) {
+                                musicProviderId = "I_HEART_RADIO";
+                            }
+                            if (StringUtils.containsIgnoreCase(musicProviderId, "Apple")
+                                    && StringUtils.containsIgnoreCase(musicProviderId, "Music")) {
+                                musicProviderId = "APPLE_MUSIC";
                             }
                         }
                     }
@@ -1329,5 +1390,10 @@ public class EchoHandler extends BaseThingHandler {
         updateState(CHANNEL_NEXT_MUSIC_ALARM,
                 nextMusicAlarm == null ? UnDefType.UNDEF : new DateTimeType(nextMusicAlarm));
         updateState(CHANNEL_NEXT_TIMER, nextTimer == null ? UnDefType.UNDEF : new DateTimeType(nextTimer));
+    }
+
+    @Override
+    public void updateChannelState(String channelId, State state) {
+        updateState(channelId, state);
     }
 }
