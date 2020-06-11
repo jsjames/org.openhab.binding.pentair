@@ -12,6 +12,7 @@
  */
 package org.openhab.binding.pentair.internal;
 
+import org.bouncycastle.util.Arrays;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
@@ -35,6 +36,7 @@ public class PentairPacket {
     protected boolean initialized;
 
     public byte[] buf;
+    public boolean haschecksum = false;
 
     /**
      * Constructor for PentairPacket basic packet.
@@ -57,6 +59,10 @@ public class PentairPacket {
         initialized = true;
     }
 
+    public PentairPacket(byte[] buf, int length) {
+        this.buf = buf;
+    }
+
     /**
      * Constructor to create a copy of PentairPacket p. Note references the same byte array as original. Used when
      * coverting from a generic packet to a specialized packet.
@@ -69,13 +75,17 @@ public class PentairPacket {
         initialized = true;
     }
 
+    public int getBufLength() {
+        return buf.length;
+    }
+
     /**
      * Gets length of packet
      *
      * @return length of packet
      */
     public int getLength() {
-        return buf[LENGTH];
+        return (buf[LENGTH] & 0xFF);
     }
 
     /**
@@ -84,7 +94,7 @@ public class PentairPacket {
      * @param length length of packet
      */
     public void setLength(int length) {
-        if (length > buf[LENGTH]) {
+        if (length > (buf[LENGTH] & 0xFF)) {
             buf = new byte[length + 6];
         }
         buf[LENGTH] = (byte) length;
@@ -96,7 +106,7 @@ public class PentairPacket {
      * @return action byte of packet
      */
     public int getAction() {
-        return buf[ACTION] & 0xFF; // need to convert to unsigned value
+        return (buf[ACTION] & 0xFF); // need to convert to unsigned value
     }
 
     /**
@@ -114,7 +124,7 @@ public class PentairPacket {
      * @return source byte of packet
      */
     public int getSource() {
-        return buf[SOURCE];
+        return (buf[SOURCE] & 0xFF);
     }
 
     /**
@@ -132,7 +142,7 @@ public class PentairPacket {
      * @return destination byte of packet
      */
     public int getDest() {
-        return buf[DEST];
+        return (buf[DEST] & 0xFF);
     }
 
     /**
@@ -148,7 +158,7 @@ public class PentairPacket {
      * Gets the preamble byte of packet
      */
     public int getPreambleByte() {
-        return buf[1] & 0xFF;
+        return (buf[1] & 0xFF);
     }
 
     /**
@@ -163,7 +173,7 @@ public class PentairPacket {
         if (num2 > buf.length) {
             return -1;
         }
-        return buf[num2] & 0xFF;
+        return (buf[num2] & 0xFF);
     }
 
     public void setByte(int num, byte b) {
@@ -239,5 +249,20 @@ public class PentairPacket {
         }
 
         return checksum;
+    }
+
+    public void addChecksum() {
+        int checksum;
+
+        if (!haschecksum) {
+            buf = Arrays.copyOf(buf, buf.length + 2);
+        }
+
+        checksum = calcChecksum();
+
+        buf[buf.length - 1] = (byte) ((checksum >> 8) & 0xFF);
+        buf[buf.length] = (byte) (checksum & 0xFF);
+
+        haschecksum = true;
     }
 }

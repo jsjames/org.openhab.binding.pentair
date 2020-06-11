@@ -71,12 +71,37 @@ public class PentairIntelliFloHandler extends PentairBaseThingHandler {
 
         id = ((BigDecimal) config.get("id")).intValue();
 
+        @Nullable
+        PentairBaseBridgeHandler bh = getBridgeHandler();
+
+        if (bh == null) {
+            logger.debug("Bridge does not exist and intelliflow cannot be intiailized");
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                    "IntelliFlo cannot be created without a bridge.");
+            return;
+        }
+
+        if (bh.equipment.get(id) != null) {
+            logger.debug("Another IntelliFlo has already been initialized {}.", id);
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                    "Another IntelliFlo has been initialized.");
+            return;
+        }
+
+        bh.equipment.put(id, this);
+
         goOnline();
     }
 
     @Override
     public void dispose() {
         logger.debug("Thing {} disposed.", getThing().getUID());
+
+        PentairBaseBridgeHandler bh = getBridgeHandler();
+        if (bh != null) {
+            bh.equipment.remove(id);
+        }
+
         goOffline(ThingStatusDetail.NONE);
     }
 
@@ -476,18 +501,22 @@ public class PentairIntelliFloHandler extends PentairBaseThingHandler {
     /**
      * Helper function to update channel.
      */
+    @Override
     public void updateChannel(String channel, boolean value) {
         updateState(channel, (value) ? OnOffType.ON : OnOffType.OFF);
     }
 
+    @Override
     public void updateChannel(String channel, int value) {
         updateState(channel, new DecimalType(value));
     }
 
+    @Override
     public void updateChannel(String channel, String value) {
         updateState(channel, new StringType(value));
     }
 
+    @Override
     public void updateChannelPower(String channel, int value) {
         updateState(channel, new QuantityType<>(value, SmartHomeUnits.WATT));
     }

@@ -31,6 +31,7 @@ import org.eclipse.smarthome.io.transport.serial.SerialPortManager;
 import org.openhab.binding.pentair.internal.handler.PentairBaseBridgeHandler;
 import org.openhab.binding.pentair.internal.handler.PentairControllerHandler;
 import org.openhab.binding.pentair.internal.handler.PentairIPBridgeHandler;
+import org.openhab.binding.pentair.internal.handler.PentairIntelliChemHandler;
 import org.openhab.binding.pentair.internal.handler.PentairIntelliChlorHandler;
 import org.openhab.binding.pentair.internal.handler.PentairIntelliFloHandler;
 import org.openhab.binding.pentair.internal.handler.PentairSerialBridgeHandler;
@@ -90,6 +91,8 @@ public class PentairHandlerFactory extends BaseThingHandlerFactory {
             return new PentairIntelliFloHandler(thing);
         } else if (thingTypeUID.equals(INTELLICHLOR_THING_TYPE)) {
             return new PentairIntelliChlorHandler(thing);
+        } else if (thingTypeUID.equals(INTELLICHEM_THING_TYPE)) {
+            return new PentairIntelliChemHandler(thing);
         }
 
         return null;

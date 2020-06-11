@@ -16,8 +16,12 @@ import static org.openhab.binding.pentair.internal.PentairBindingConstants.*;
 
 import java.math.BigDecimal;
 import java.util.Calendar;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import javax.measure.Unit;
+import javax.measure.quantity.Temperature;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -35,7 +39,6 @@ import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
-import org.eclipse.smarthome.core.types.State;
 import org.eclipse.smarthome.core.types.UnDefType;
 import org.openhab.binding.pentair.internal.PentairControllerCircuit;
 import org.openhab.binding.pentair.internal.PentairControllerConstants;
@@ -45,8 +48,6 @@ import org.openhab.binding.pentair.internal.PentairPacketHeatSetPoint;
 import org.openhab.binding.pentair.internal.PentairPacketStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import tec.uom.se.unit.Units;
 
 /**
  * The {@link PentairControllerHandler} is responsible for implementation of the EasyTouch Controller. It will handle
@@ -80,7 +81,6 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
     /**
      * current/last status packet recieved, used to compare new packet values to determine if status needs to be updated
      */
-    @Nullable
     protected PentairPacketStatus p29cur = new PentairPacketStatus();
     @Nullable
     protected PentairPacketStatus p29old;
@@ -110,17 +110,37 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
     public void initialize() {
         logger.debug("Initializing Controller - Thing ID: {}.", this.getThing().getUID());
 
+        this.id = ((BigDecimal) getConfig().get("id")).intValue();
+
+        @Nullable
+        PentairBaseBridgeHandler bh = getBridgeHandler();
+
+        if (bh == null) {
+            logger.debug("Bridge does not exist and controller cannot be intiailized");
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                    "Controller cannot be created without a bridge.");
+            return;
+        }
+
+        if (bh.equipment.get(id) != null) {
+            logger.debug("Another controller with the same ID ({}) has already been initialized.", id);
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                    "Another controller with identical ID has been initialized.");
+            return;
+        }
+
+        bh.equipment.put(id, this);
+
         goOnline();
     }
 
     @Override
     public void dispose() {
-
         logger.debug("Thing {} disposed.", getThing().getUID());
-        try {
-            throw (new Exception("dispose"));
-        } catch (Exception e) {
-            logger.debug("dispose {}", e.getStackTrace());
+
+        PentairBaseBridgeHandler bh = getBridgeHandler();
+        if (bh != null) {
+            bh.equipment.remove(id);
         }
 
         goOffline(ThingStatusDetail.NONE);
@@ -142,13 +162,6 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
 
         this.waitStatusForOnline = false;
 
-        if (onlineController != null) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
-                    "Another Controller controller is already configured.");
-        }
-
-        id = ((BigDecimal) getConfig().get("id")).intValue();
-
         // make sure bridge exists and is online
         Bridge bridge = this.getBridge();
         if (bridge == null) {
@@ -158,6 +171,12 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
         if (bh == null) {
             logger.debug("Bridge does not exist");
             return;
+        }
+
+        if (onlineController != null) {
+            logger.debug("Another controller is already configured");
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                    "Another controller is already configured.");
         }
 
         ThingStatus ts = bh.getThing().getStatus();
@@ -200,7 +219,7 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
                     if (circuits[i].on) {
                         circuits[i].minsrun++;
                         updateState(circuits[i].getGroup() + "#" + CONTROLLER_CIRCUITMINSRUN,
-                                new QuantityType<>(circuits[i].minsrun, Units.MINUTE));
+                                new DecimalType(circuits[i].minsrun));
                     }
                 }
             }
@@ -270,6 +289,14 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
         }
 
         return 0;
+    }
+
+    public Unit<Temperature> getUOM() {
+        return (p29cur.uom) ? SIUnits.CELSIUS : ImperialUnits.FAHRENHEIT;
+    }
+
+    public QuantityType<Temperature> getWaterTemp() {
+        return new QuantityType<Temperature>(p29cur.pooltemp, getUOM());
     }
 
     public @Nullable PentairControllerSchedule getPPCS(String groupid) {
@@ -382,8 +409,9 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
                 }
                 case CONTROLLER_CIRCUITMINSRUN: {
                     PentairControllerCircuit pcc = getPCC(groupId);
-                    if (pcc != null) {
-                        updateState(channelUID, new QuantityType<>(pcc.getMinsRun(), Units.MINUTE));
+
+                    if (pcc != null && (pcc.getMinsRun() != 0)) {
+                        updateState(channelUID, new DecimalType(pcc.getMinsRun()));
                     }
                     break;
                 }
@@ -406,8 +434,9 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
             case CONTROLLER_CIRCUITMINSRUN: {
                 int circuit = getCircuitNumber(groupId);
 
-                BigDecimal mins = ((QuantityType<?>) command).toBigDecimal();
-                circuits[circuit - 1].minsrun = mins.intValue();
+                logger.debug("Update Mins Run {}", ((Number) command).intValue());
+
+                circuits[circuit - 1].minsrun = ((Number) command).intValue();
 
                 break;
             }
@@ -418,9 +447,6 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
                 int mode = PentairControllerConstants.LIGHTMODES_INV.get(str);
                 lightmode = mode;
                 setLightMode(mode);
-
-                // not sure why this doesn't autoupdate
-                updateState(channelUID, (State) command);
 
                 break;
             }
@@ -522,18 +548,14 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
                     break;
                 }
 
-                int sp = ((QuantityType<?>) command).toBigDecimal().intValue();
-
-                if (sp == 0) {
-                    return;
-                }
+                QuantityType<?> qt = (QuantityType<?>) command;
 
                 switch (groupId) {
                     case CONTROLLER_SPAHEAT:
-                        setPoint(false, sp);
+                        setSetPoint(false, (QuantityType<Temperature>) qt);
                         break;
                     case CONTROLLER_POOLHEAT:
-                        setPoint(true, sp);
+                        setSetPoint(true, (QuantityType<Temperature>) qt);
                         break;
                 }
 
@@ -688,17 +710,11 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
             return false;
         }
 
-        /*
-         * String version = String.format("%d.%d", majorrev, minorrev);
-         *
-         * this causes thingUpdated to be updated - default implementation is to dispose and re-initialize which is
-         * extreme! I don't want to override in case I break some expected behavior in the framework. So removing this
-         * property
-         * update since it is for informational purposes only.
-         * Map<String, String> editProperties = editProperties();
-         * editProperties.put(CONTROLLER_PROPERTYFWVERSION, version);
-         * updateProperties(editProperties);
-         */
+        String version = String.format("%d.%d", majorrev, minorrev);
+
+        Map<String, String> editProperties = editProperties();
+        editProperties.put(CONTROLLER_PROPERTYFWVERSION, version);
+        updateProperties(editProperties);
 
         return true;
     }
@@ -755,16 +771,26 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
      * @param Pool pool=true, spa=false
      * @param temp
      */
-    public void setPoint(boolean pool, int temp) {
+    public void setSetPoint(boolean pool, QuantityType<Temperature> temp) {
         // [16,34,136,4,POOL HEAT Temp,SPA HEAT Temp,Heat Mode,0,2,56]
         // [165, preambleByte, 16, 34, 136, 4, currentHeat.poolSetPoint, parseInt(req.params.temp), updateHeatMode, 0]
-        int spaset = (!pool) ? temp : phspcur.spasetpoint;
-        int poolset = (pool) ? temp : phspcur.poolsetpoint;
-        int heatmode = (phspcur.spaheatmode << 2) | phspcur.poolheatmode;
 
-        if (temp < 50 || temp > 105) {
+        if ((temp.getUnit() == SIUnits.CELSIUS) && (temp.intValue() < 10 || temp.intValue() > 41)) {
+            logger.info("setPoint temperature is out of range (10C - 41C): {}C", temp.intValue());
+            return;
+        } else if (temp.intValue() < 50 || temp.intValue() > 105) { // UOM is ImperialUnits.FAHRENHEIT
+            logger.info("setPoint temperature is out of range (50F - 105F); {}F", temp.intValue());
+        }
+
+        QuantityType<Temperature> t;
+        t = (getUOM() == SIUnits.CELSIUS) ? temp.toUnit(SIUnits.CELSIUS) : temp.toUnit(ImperialUnits.FAHRENHEIT);
+        if (t == null) {
             return;
         }
+
+        int spaset = (!pool) ? t.intValue() : phspcur.spasetpoint;
+        int poolset = (pool) ? t.intValue() : phspcur.poolsetpoint;
+        int heatmode = (phspcur.spaheatmode << 2) | phspcur.poolheatmode;
 
         byte[] packet = { (byte) 0xA5, (byte) preambleByte, (byte) id, (byte) 0x00 /* source */, (byte) 0x88,
                 (byte) 0x04, (byte) poolset, (byte) spaset, (byte) heatmode, (byte) 0 };
@@ -884,7 +910,8 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
                 pcc.setName(p.getByte(2));
                 pcc.setFunction(p.getByte(1));
 
-                updateCircuitChannels(pcc.getGroup(), pcc);
+                updateChannel(pcc.getGroup(), CONTROLLER_CIRCUITNAME, pcc.getNameStr());
+                updateChannel(pcc.getGroup(), CONTROLLER_CIRCUITFUNCTION, pcc.getFunctionStr());
 
                 logger.debug("Circuit Names - Circuit: {}, Function: {}, Name: {}", pcc.id, pcc.getFunctionStr(),
                         pcc.getNameStr());
@@ -949,6 +976,9 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
             case 134: // Set Curcuit On/Off
                 logger.debug("Set Circuit Function On/Off (unseen): {}", p);
                 break;
+            case 210: // Get Intellichem status
+                logger.debug("Get IntelliChem status: {}", p);
+                break;
             case 252: // Status - A5 1E 0F 10 FC 11 00 02 0A 00 00 01 0A 00 00 00 00 00 00 00 00 00 00
                 majorrev = p.getByte(1);
                 minorrev = p.getByte(2);
@@ -967,11 +997,9 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
         updateState(group + "#" + channel, (value) ? OnOffType.ON : OnOffType.OFF);
     }
 
-    @SuppressWarnings("null")
     public void updateChannelTemp(String group, String channel, int value) {
         if (value != 999) {
-            updateState(group + "#" + channel,
-                    new QuantityType<>(value, (p29cur.uom) ? SIUnits.CELSIUS : ImperialUnits.FAHRENHEIT));
+            updateState(group + "#" + channel, new QuantityType<Temperature>(value, getUOM()));
         } else {
             updateState(group + "#" + channel, UnDefType.UNDEF);
         }
@@ -1003,12 +1031,5 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
                 "Controller Schedule - ID: {}, Type: {}, Circuit: {}, Start Time: {}:{}, End Time: {}:{}, Days: {}",
                 pcs.id, pcs.type, pcs.circuit, pcs.start / 60, pcs.start % 60, pcs.end / 60, pcs.end % 60,
                 pcs.getDays());
-    }
-
-    public void updateCircuitChannels(String group, PentairControllerCircuit pcc) {
-        updateChannel(group, CONTROLLER_CIRCUITSWITCH, pcc.on);
-        updateChannel(group, CONTROLLER_CIRCUITMINSRUN, pcc.minsrun);
-        updateChannel(group, CONTROLLER_CIRCUITNAME, pcc.getNameStr());
-        updateChannel(group, CONTROLLER_CIRCUITFUNCTION, pcc.getFunctionStr());
     }
 }

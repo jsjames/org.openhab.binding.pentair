@@ -13,6 +13,12 @@
 package org.openhab.binding.pentair.internal.handler;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.library.types.DecimalType;
+import org.eclipse.smarthome.core.library.types.OnOffType;
+import org.eclipse.smarthome.core.library.types.QuantityType;
+import org.eclipse.smarthome.core.library.types.StringType;
+import org.eclipse.smarthome.core.library.unit.SmartHomeUnits;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
@@ -72,6 +78,44 @@ public abstract class PentairBaseThingHandler extends BaseThingHandler {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
         }
+    }
+
+    @Nullable
+    public PentairBaseBridgeHandler getBridgeHandler() {
+        // make sure bridge exists and is online
+        Bridge bridge = this.getBridge();
+        if (bridge == null) {
+            return null;
+        }
+        PentairBaseBridgeHandler bh = (PentairBaseBridgeHandler) bridge.getHandler();
+        if (bh == null) {
+            return null;
+        }
+
+        return bh;
+    }
+
+    /**
+     * Helper function to update channel.
+     */
+    public void updateChannel(String channel, boolean value) {
+        updateState(channel, (value) ? OnOffType.ON : OnOffType.OFF);
+    }
+
+    public void updateChannel(String channel, int value) {
+        updateState(channel, new DecimalType(value));
+    }
+
+    public void updateChannel(String channel, double value) {
+        updateState(channel, new DecimalType(value));
+    }
+
+    public void updateChannel(String channel, String value) {
+        updateState(channel, new StringType(value));
+    }
+
+    public void updateChannelPower(String channel, int value) {
+        updateState(channel, new QuantityType<>(value, SmartHomeUnits.WATT));
     }
 
     /**

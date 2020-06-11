@@ -17,6 +17,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -60,8 +61,8 @@ public class PentairIPBridgeHandler extends PentairBaseBridgeHandler {
             Socket socket = new Socket(config.address, config.port);
             this.socket = socket;
 
-            reader = new BufferedInputStream(socket.getInputStream());
-            writer = new BufferedOutputStream(socket.getOutputStream());
+            this.setReader(new BufferedInputStream(socket.getInputStream()));
+            this.setWriter(new BufferedOutputStream(socket.getOutputStream()));
 
             logger.info("Pentair IPBridge connected to {}:{}", config.address, config.port);
         } catch (UnknownHostException e) {
@@ -108,24 +109,24 @@ public class PentairIPBridgeHandler extends PentairBaseBridgeHandler {
             parser = null;
         }
 
-        if (reader != null) {
+        if (reader.isPresent()) {
             try {
-                reader.close();
+                reader.get().close();
             } catch (IOException e) {
                 logger.debug("disconnect: IOException");
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Error in closing reader");
             }
-            reader = null;
+            reader = Optional.empty();
         }
 
-        if (writer != null) {
+        if (writer.isPresent()) {
             try {
-                writer.close();
+                writer.get().close();
             } catch (IOException e) {
                 logger.debug("disconnect: IOException");
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Error in closing writer");
             }
-            writer = null;
+            writer = Optional.empty();
         }
 
         if (socket != null) {

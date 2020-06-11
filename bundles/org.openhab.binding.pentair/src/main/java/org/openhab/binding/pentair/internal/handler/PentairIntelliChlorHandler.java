@@ -16,7 +16,6 @@ import static org.openhab.binding.pentair.internal.PentairBindingConstants.*;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
@@ -24,9 +23,8 @@ import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
-import org.openhab.binding.pentair.internal.PentairBindingConstants;
+import org.openhab.binding.pentair.internal.PentairIntelliChlor;
 import org.openhab.binding.pentair.internal.PentairPacket;
-import org.openhab.binding.pentair.internal.PentairPacketIntellichlor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,8 +41,10 @@ public class PentairIntelliChlorHandler extends PentairBaseThingHandler {
     private final Logger logger = LoggerFactory.getLogger(PentairIntelliChlorHandler.class);
     private boolean waitStatusForOnline = false;
 
-    protected PentairPacketIntellichlor pic3cur = new PentairPacketIntellichlor();
-    protected PentairPacketIntellichlor pic4cur = new PentairPacketIntellichlor();
+    @Nullable
+    public static PentairIntelliChlorHandler onlineChlorinator;
+
+    public PentairIntelliChlor pic = new PentairIntelliChlor();
 
     public PentairIntelliChlorHandler(Thing thing) {
         super(thing);
@@ -56,6 +56,25 @@ public class PentairIntelliChlorHandler extends PentairBaseThingHandler {
 
         id = 0; // Intellichlor doesn't have ID
 
+        @Nullable
+        PentairBaseBridgeHandler bh = getBridgeHandler();
+
+        if (bh == null) {
+            logger.debug("Bridge does not exist and IntelliChlor cannot be intiailized");
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                    "IntelliChlor cannot be created without a bridge.");
+            return;
+        }
+
+        if (bh.equipment.get(id) != null) {
+            logger.debug("Another IntelliChlor has already been initialized {}.", id);
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                    "Another IntelliChlor has already been initialized.");
+            return;
+        }
+
+        bh.equipment.put(id, this);
+
         goOnline();
     }
 
@@ -63,17 +82,31 @@ public class PentairIntelliChlorHandler extends PentairBaseThingHandler {
     public void dispose() {
         logger.debug("Thing {} disposed.", getThing().getUID());
 
+        PentairBaseBridgeHandler bh = getBridgeHandler();
+        if (bh != null) {
+            bh.equipment.remove(id);
+        }
+
         goOffline(ThingStatusDetail.NONE);
     }
 
     public void goOnline() {
         logger.debug("Thing {} goOnline.", getThing().getUID());
 
+        if (onlineChlorinator != null) {
+            logger.debug("Another IntelliChlor has already been configured");
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                    "Another IntelliChlor is already configured.");
+            return;
+        }
+
         waitStatusForOnline = true;
     }
 
     public void goOffline(ThingStatusDetail detail) {
         logger.debug("Thing {} goOffline.", getThing().getUID());
+
+        onlineChlorinator = null;
 
         updateStatus(ThingStatus.OFFLINE, detail);
     }
@@ -93,68 +126,77 @@ public class PentairIntelliChlorHandler extends PentairBaseThingHandler {
     public void handleCommand(ChannelUID channelUID, Command command) {
         if (command instanceof RefreshType) {
             logger.trace("IntelliChlor received refresh command");
-            updateChannel(channelUID.getId(), null);
+
+            switch (channelUID.getId()) {
+                case INTELLICHLOR_SALTOUTPUT:
+                    updateChannel(INTELLICHLOR_SALTOUTPUT, pic.saltoutput);
+                    break;
+                case INTELLICHLOR_SALINITY:
+                    updateChannel(INTELLICHLOR_SALINITY, pic.salinity);
+                    break;
+                case INTELLICHLOR_OK:
+                    updateChannel(INTELLICHLOR_OK, pic.ok);
+                    break;
+                case INTELLICHLOR_LOWFLOW:
+                    updateChannel(INTELLICHLOR_LOWFLOW, pic.lowflow);
+                    break;
+                case INTELLICHLOR_LOWSALT:
+                    updateChannel(INTELLICHLOR_LOWSALT, pic.lowsalt);
+                    break;
+                case INTELLICHLOR_VERYLOWSALT:
+                    updateChannel(INTELLICHLOR_VERYLOWSALT, pic.verylowsalt);
+                    break;
+                case INTELLICHLOR_HIGHCURRENT:
+                    updateChannel(INTELLICHLOR_HIGHCURRENT, pic.highcurrent);
+                    break;
+                case INTELLICHLOR_CLEANCELL:
+                    updateChannel(INTELLICHLOR_CLEANCELL, pic.cleancell);
+                    break;
+                case INTELLICHLOR_LOWVOLTAGE:
+                    updateChannel(INTELLICHLOR_LOWVOLTAGE, pic.lowvoltage);
+                    break;
+                case INTELLICHLOR_LOWWATERTEMP:
+                    updateChannel(INTELLICHLOR_LOWWATERTEMP, pic.lowwatertemp);
+                    break;
+                case INTELLICHLOR_COMMERROR:
+                    updateChannel(INTELLICHLOR_COMMERROR, pic.commerror);
+                    break;
+            }
         }
     }
 
     @Override
     public void processPacketFrom(PentairPacket p) {
-        PentairPacketIntellichlor pic = (PentairPacketIntellichlor) p;
 
-        if (waitStatusForOnline) {
-            updateStatus(ThingStatus.ONLINE);
-            waitStatusForOnline = false;
-        }
-
-        switch (pic.getLength()) {
-            case 3:
-                if (pic.getCmd() != 0x11) { // only packets with 0x11 have valid saltoutput numbers.
-                    break;
+        pic.parsePacket(p);
+        switch (p.buf[PentairIntelliChlor.ACTION]) {
+            case 0x11: // set salt output % command
+                pic.parsePacket(p);
+                updateChannel(INTELLICHLOR_SALTOUTPUT, pic.saltoutput);
+                logger.debug("Intellichlor set output % {}", pic.saltoutput);
+                break;
+            case 0x12: // response to set salt output
+                if (waitStatusForOnline) { // Only go online after first response from the Intellichlor
+                    updateStatus(ThingStatus.ONLINE);
+                    onlineChlorinator = this;
+                    waitStatusForOnline = false;
                 }
 
-                PentairPacketIntellichlor pic3Old = pic3cur;
-                pic3cur = pic;
+                pic.parsePacket(p);
 
-                updateChannel(INTELLICHLOR_SALTOUTPUT, pic3Old);
+                updateChannel(INTELLICHLOR_SALINITY, pic.salinity);
+                updateChannel(INTELLICHLOR_OK, pic.ok);
+                updateChannel(INTELLICHLOR_LOWFLOW, pic.lowflow);
+                updateChannel(INTELLICHLOR_LOWSALT, pic.lowsalt);
+                updateChannel(INTELLICHLOR_VERYLOWSALT, pic.verylowsalt);
+                updateChannel(INTELLICHLOR_HIGHCURRENT, pic.highcurrent);
+                updateChannel(INTELLICHLOR_CLEANCELL, pic.cleancell);
+                updateChannel(INTELLICHLOR_LOWVOLTAGE, pic.lowvoltage);
+                updateChannel(INTELLICHLOR_LOWWATERTEMP, pic.lowwatertemp);
+                updateChannel(INTELLICHLOR_COMMERROR, pic.commerror);
 
-                break;
-            case 4:
-                if (pic.getCmd() != 0x12) {
-                    break;
-                }
+                logger.debug("IntelliChlor status: {}", pic.toString());
 
-                PentairPacketIntellichlor pic4Old = pic4cur;
-                pic4cur = pic;
-
-                updateChannel(INTELLICHLOR_SALINITY, pic4Old);
-
-                break;
-        }
-
-        logger.debug("Intellichlor command: {}", pic);
-    }
-
-    /**
-     * Helper function to compare and update channel if needed. The class variables p29_cur and phsp_cur are used to
-     * determine the appropriate state of the channel.
-     *
-     * @param channel name of channel to be updated, corresponds to channel name in {@link PentairBindingConstants}
-     * @param p Packet representing the former state. If null, no compare is done and state is updated.
-     */
-    public void updateChannel(String channel, @Nullable PentairPacket p) {
-        PentairPacketIntellichlor pic = (PentairPacketIntellichlor) p;
-
-        switch (channel) {
-            case INTELLICHLOR_SALINITY:
-                if (pic == null || (pic.salinity != pic4cur.salinity)) {
-                    updateState(channel, new DecimalType(pic4cur.salinity));
-                }
-                break;
-            case INTELLICHLOR_SALTOUTPUT:
-                if (pic == null || (pic.saltoutput != pic3cur.saltoutput)) {
-                    updateState(channel, new DecimalType(pic3cur.saltoutput));
-                }
-                break;
         }
     }
 }

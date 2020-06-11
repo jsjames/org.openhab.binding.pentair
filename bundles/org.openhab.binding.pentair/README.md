@@ -50,8 +50,9 @@ This binding supports the following thing types:
 | ip_bridge       |   Bridge   | A TCP network RS-485 bridge device.     |
 | serial_bridge   |   Bridge   | A USB or serial RS-485 device.          |
 | Controller      |   Thing    | Pentair EasyTouch pool controller.      |
-| Intelliflo      |   Thing    | Pentair Intelliflo variable speed pump. |
-| Intellichlor    |   Thing    | Pentair Intellichlor chlorinator.       |
+| IntelliFlo      |   Thing    | Pentair IntelliFlo variable speed pump. |
+| IntelliChlor    |   Thing    | Pentair IntelliChlor chlorinator.       |
+| IntelliChem     |   Thing    | Penaair IntelliChem.
 
 
 ## Binding Configuration
@@ -82,6 +83,7 @@ Bridge pentair:ip_bridge:1 [ address="192.168.1.202", port=10001 ] {
     controller main [ id=16 ]
     intelliflo pump1 [ id=96 ]
     intellichlor ic40
+    intellichem chem
 }
 ```
 
@@ -92,6 +94,7 @@ Bridge pentair:serial_bridge:1 [ serialPort="/dev/ttyUSB0" ] {
     controller main [ id=16 ]
     intelliflo pump1 [ id=96 ]
     intellichlor ic40
+    intellichem chem
 }
 ```
 
@@ -133,7 +136,7 @@ This configuration setting will instruct the binding to automatically update the
 
 This binding allows both reading and writing of schedules and supports up to 9 schedules. Programming of a schedule can be accomplished either by using the discrete channels linked to items (i.e. type, start, end, circuit, days) or you can concatenate those and use the `schedule` channel saved as a comma delimited string.  To prevent erroneous writes to the schedules though, one must write to the `type` channel the same value twice within 5 sec.
 
-### Thing: Intellichlor
+### Thing: IntelliChlor
 
 Represents an Intellichlor module connected in your system.  Currently, the values here are readonly.
 
@@ -141,8 +144,17 @@ Represents an Intellichlor module connected in your system.  Currently, the valu
 | :------------------: | :----:     | :-: | :---------- |
 | saltoutput           | Number     | R   | Current salt output %. |
 | salinity             | Number     | R   | Salinity (ppm). |
+| ok                   | Switch     | R   | System is operating normally. |
+| lowflow              | Switch     | R   | Water flow rate is low. |
+| lowsalt              | Switch     | R   | Low salt level. |
+| verylowsalt          | Switch     | R   | Very low salt level. |
+| highcurrent          | Switch     | R   | High current level. |
+| cleancell            | Switch     | R   | Clean cell. |
+| lowvoltage           | Switch     | R   | Low voltage. |
+| lowwatertemp         | Switch     | R   | Water temperature is too low for chlorine generation. |
+| commerror            | Switch     | R   | Communication error. |
 
-### Thing: Intelliflo
+### Thing: IntelliFlo
 
 Represents and interfaces to an Intelliflo pump.  When a controller is active in the system all pump values are read only since the pump can only have one master at a time.  If no controller is present or the controller is in service mode, the pump can be controlled directly from OpenHab.
 
@@ -157,6 +169,27 @@ Represents and interfaces to an Intelliflo pump.  When a controller is active in
 | program2             | Switch    | RW | Run pump program 2 settings. |
 | program3             | Switch    | RW | Run pump program 3 settings. |
 | program4             | Switch    | RW | Run pump program 4 settings. |
+
+
+### Thing: IntelliChem
+
+Represents and interfaces to an IntelliChem unit. This is for montioring of values only and IntelliChem cannot be directly controlled through this binding.
+
+| Channel              | Type       |     | Description |
+| :------------------: | :----:     | :-: | :---------- |
+| phreading            | Number     | R   | Current PH reading. |
+| orpreading           | Number     | R   | Current Oxidation Reduction Potential (ORP) reading. |
+| phsetpoint           | Number     | R   | Current PH set point. |
+| orpsetpoint          | Number     | R   | Oxidation Reduction Potential (ORP) set point. |
+| tank1                | Number     | R   | Tank 1 level. |
+| tank2                | Number     | R   | Tank 2 level. |
+| calciumhardness      | Number     | R   | Calcium hardness PPM (mg/L). |
+| cyareading           | Number     | R   | Cyanuric acid reading. |
+| totalalkalinity      | Number     | R   | Total Alkalinity reading. |
+| waterflowalarm       | Switch     | R   | Water flow alarm (on = no water flow). |
+| mode1                | Number     | R   | Mode 1 status. |
+| mode2                | Number     | R   | Mode 2 status. |
+| saturationindex      | Number     | R   | Calculated saturation index. |
 
 
 ## Example setup

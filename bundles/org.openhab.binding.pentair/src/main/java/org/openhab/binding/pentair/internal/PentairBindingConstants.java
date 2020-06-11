@@ -39,6 +39,7 @@ public class PentairBindingConstants {
     public static final String CONTROLLER = "controller";
     public static final String INTELLIFLO = "intelliflo";
     public static final String INTELLICHLOR = "intellichlor";
+    public static final String INTELLICHEM = "intellichem";
 
     // List of all Bridge Thing Type UIDs
     public static final ThingTypeUID IP_BRIDGE_THING_TYPE = new ThingTypeUID(BINDING_ID, IP_BRIDGE);
@@ -48,6 +49,7 @@ public class PentairBindingConstants {
     public static final ThingTypeUID INTELLIFLO_THING_TYPE = new ThingTypeUID(BINDING_ID, INTELLIFLO);
     public static final ThingTypeUID CONTROLLER_THING_TYPE = new ThingTypeUID(BINDING_ID, CONTROLLER);
     public static final ThingTypeUID INTELLICHLOR_THING_TYPE = new ThingTypeUID(BINDING_ID, INTELLICHLOR);
+    public static final ThingTypeUID INTELLICHEM_THING_TYPE = new ThingTypeUID(BINDING_ID, INTELLICHEM);
 
     public static final String PARAMETER_ID = "id";
 
@@ -115,6 +117,30 @@ public class PentairBindingConstants {
     // List of Intellichlor channel ids
     public static final String INTELLICHLOR_SALTOUTPUT = "saltoutput";
     public static final String INTELLICHLOR_SALINITY = "salinity";
+    public static final String INTELLICHLOR_OK = "ok";
+    public static final String INTELLICHLOR_LOWFLOW = "lowflow";
+    public static final String INTELLICHLOR_LOWSALT = "lowsalt";
+    public static final String INTELLICHLOR_VERYLOWSALT = "verylowsalt";
+    public static final String INTELLICHLOR_HIGHCURRENT = "highcurrent";
+    public static final String INTELLICHLOR_CLEANCELL = "cleancell";
+    public static final String INTELLICHLOR_LOWVOLTAGE = "lowvoltage";
+    public static final String INTELLICHLOR_LOWWATERTEMP = "lowwatertemp";
+    public static final String INTELLICHLOR_COMMERROR = "commerror";
+
+    // List of Intellichem channel ids
+    public static final String INTELLICHEM_PHREADING = "phreading";
+    public static final String INTELLICHEM_ORPREADING = "orpreading";
+    public static final String INTELLICHEM_PHSETPOINT = "phsetpoint";
+    public static final String INTELLICHEM_ORPSETPOINT = "orpsetpoint";
+    public static final String INTELLICHEM_TANK1 = "tank1";
+    public static final String INTELLICHEM_TANK2 = "tank2";
+    public static final String INTELLICHEM_CALCIUMHARDNESS = "calciumhardness";
+    public static final String INTELLICHEM_CYAREADING = "cyareading";
+    public static final String INTELLICHEM_TOTALALKALINITY = "totalalkalinity";
+    public static final String INTELLICHEM_WATERFLOWALARM = "waterflowalarm";
+    public static final String INTELLICHEM_MODE1 = "mode1";
+    public static final String INTELLICHEM_MODE2 = "mode2";
+    public static final String INTELLICHEM_SATURATIONINDEX = "saturationindex";
 
     // List of all Intelliflo channel ids
     public static final String INTELLIFLO_RUN = "run";
@@ -137,10 +163,11 @@ public class PentairBindingConstants {
     public static final Integer PROPERTY_PORT = 10000;
 
     // Set of all supported Thing Type UIDs
-    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections
-            .unmodifiableSet(Stream.of(IP_BRIDGE_THING_TYPE, SERIAL_BRIDGE_THING_TYPE, CONTROLLER_THING_TYPE,
-                    INTELLIFLO_THING_TYPE, INTELLICHLOR_THING_TYPE).collect(Collectors.toSet()));
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections.unmodifiableSet(
+            Stream.of(IP_BRIDGE_THING_TYPE, SERIAL_BRIDGE_THING_TYPE, CONTROLLER_THING_TYPE, INTELLIFLO_THING_TYPE,
+                    INTELLICHLOR_THING_TYPE, INTELLICHEM_THING_TYPE).collect(Collectors.toSet()));
 
-    public static final Set<ThingTypeUID> DISCOVERABLE_DEVICE_TYPE_UIDS = Collections.unmodifiableSet(Stream
-            .of(CONTROLLER_THING_TYPE, INTELLIFLO_THING_TYPE, INTELLICHLOR_THING_TYPE).collect(Collectors.toSet()));
+    public static final Set<ThingTypeUID> DISCOVERABLE_DEVICE_TYPE_UIDS = Collections.unmodifiableSet(
+            Stream.of(CONTROLLER_THING_TYPE, INTELLIFLO_THING_TYPE, INTELLICHLOR_THING_TYPE, INTELLICHEM_THING_TYPE)
+                    .collect(Collectors.toSet()));
 }

@@ -51,7 +51,7 @@ public class PentairDiscoveryService extends AbstractDiscoveryService {
 
     public void notifyDiscoveredController(int id) {
         ThingUID bridgeUID = bridgeHandler.getThing().getUID();
-        ThingUID uid = new ThingUID(CONTROLLER_THING_TYPE, bridgeUID, "controller");
+        ThingUID uid = new ThingUID(CONTROLLER_THING_TYPE, bridgeUID, CONTROLLER);
 
         DiscoveryResult result = DiscoveryResultBuilder.create(uid).withBridge(bridgeUID).withProperty(PARAMETER_ID, id)
                 .build();
@@ -72,11 +72,21 @@ public class PentairDiscoveryService extends AbstractDiscoveryService {
 
     public void notifyDiscoveredIntellichlor(int id) {
         ThingUID bridgeUID = bridgeHandler.getThing().getUID();
-        ThingUID uid = new ThingUID(INTELLICHLOR_THING_TYPE, bridgeUID, "intellichlor");
+        ThingUID uid = new ThingUID(INTELLICHLOR_THING_TYPE, bridgeUID, INTELLICHLOR);
 
         DiscoveryResult result = DiscoveryResultBuilder.create(uid).withBridge(bridgeUID).withProperty(PARAMETER_ID, id)
                 .build();
         thingDiscovered(result);
         logger.debug("Discovered Intellichlor {}", uid);
+    }
+
+    public void notifyDiscoveryIntellichem(int id) {
+        ThingUID bridgeUID = bridgeHandler.getThing().getUID();
+        ThingUID uid = new ThingUID(INTELLICHEM_THING_TYPE, bridgeUID, INTELLICHEM);
+
+        DiscoveryResult result = DiscoveryResultBuilder.create(uid).withBridge(bridgeUID).withProperty(PARAMETER_ID, id)
+                .build();
+        thingDiscovered(result);
+        logger.debug("Discovered Intellichem {}", uid);
     }
 }

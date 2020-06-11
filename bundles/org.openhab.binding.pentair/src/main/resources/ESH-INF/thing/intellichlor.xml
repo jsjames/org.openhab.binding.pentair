@@ -14,8 +14,17 @@
 		<description>Pentair Intellichlor IC40</description>
 
 		<channels>
-			<channel id="saltoutput" typeId="saltoutput"/>
-			<channel id="salinity" typeId="salinity"/>
+			<channel id="saltoutput" typeId="saltoutputtype" />
+			<channel id="salinity" typeId="salinitytype" />
+			<channel id="ok" typeId="oktype" />
+			<channel id="lowflow" typeId="lowflowtype" />
+			<channel id="lowsalt" typeId="lowsalttype" />
+			<channel id="verylowsalt" typeId="verylowsalttype" />
+			<channel id="highcurrent" typeId="highcurrenttype" />
+			<channel id="cleancell" typeId="cleancelltype" />
+			<channel id="lowvoltage" typeId="lowvoltagetype" />
+			<channel id="lowwatertemp" typeId="lowwatertemptype" />
+			<channel id="commerror" typeId="commerrortype" />
 		</channels>
 
 		<config-description>
@@ -27,18 +36,80 @@
 		</config-description>
 	</thing-type>
 
-	<channel-type id="saltoutput">
+	<channel-type id="saltoutputtype">
 		<item-type>Number</item-type>
 		<label>Salt Output (%)</label>
 		<description>Current salt output setting for the chlorinator (%).</description>
-		<state readOnly="true"/>
+		<state readOnly="true" />
 	</channel-type>
 
-	<channel-type id="salinity">
+	<channel-type id="salinitytype">
 		<item-type>Number</item-type>
 		<label>Salinity (PPM)</label>
 		<description>Current salt content reading of the water (PPM).</description>
-		<state readOnly="true"/>
+		<state readOnly="true" />
 	</channel-type>
 
+	<channel-type id="oktype">
+		<item-type>Switch</item-type>
+		<label>Chlorinator OK</label>
+		<description>Chlorinator is operating correctly.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="lowflowtype">
+		<item-type>Switch</item-type>
+		<label>Low Flow</label>
+		<description>Water flow rate is low.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="lowsalttype">
+		<item-type>Switch</item-type>
+		<label>Low Salt</label>
+		<description>Low salt level.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="verylowsalttype">
+		<item-type>Switch</item-type>
+		<label>Very low salt</label>
+		<description>Very low salt level.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="highcurrenttype">
+		<item-type>Switch</item-type>
+		<label>High Current</label>
+		<description>Chlorinator drawing high current.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="cleancelltype">
+		<item-type>Switch</item-type>
+		<label>Clean cell</label>
+		<description>Clean chlorinator cell.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="lowvoltagetype">
+		<item-type>Switch</item-type>
+		<label>Low voltage</label>
+		<description>Low voltage.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="lowwatertemptype">
+		<item-type>Switch</item-type>
+		<label>Low Water Temp</label>
+		<description>Water temperature is too low for chlorine generation.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="commerrortype">
+		<item-type>Switch</item-type>
+		<label>Comm Error</label>
+		<description>Communication error with Chlorinator.</description>
+		<state readOnly="true" />
+	</channel-type>
 </thing:thing-descriptions>

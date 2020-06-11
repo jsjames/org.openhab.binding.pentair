@@ -226,7 +226,7 @@
 	</channel-type>
 
 	<channel-type id="minsruntype">
-		<item-type>Number:Time</item-type>
+		<item-type>Number</item-type>
 		<label>Minutes run</label>
 		<description>Cumulative minutes run</description>
 		<state pattern="%d %unit%" />
@@ -299,6 +299,7 @@
 				<option value="MAGENTA">Magenta</option>
 			</options>
 		</state>
+		<autoUpdatePolicy>recommend</autoUpdatePolicy>
 	</channel-type>
 
 	<channel-type id="scheduletype">
@@ -329,7 +330,7 @@
 	</channel-type>
 
 	<channel-type id="endtype">
-		<item-type>Number:time</item-type>
+		<item-type>Number</item-type>
 		<label>End Time</label>
 		<description>End time (or duration for Egg Timer) of schedule in minutes</description>
 		<state min="0" max="1440" />

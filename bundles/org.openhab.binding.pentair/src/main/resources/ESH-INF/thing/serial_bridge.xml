@@ -16,7 +16,7 @@
 			<parameter name="id" type="integer" required="false">
 				<label>Pentair ID</label>
 				<description>The ID to use to send commands on the Pentair bus (default: 34)</description>
-				<default>34</default>
+				<default>33</default>
 			</parameter>
 
 			<parameter name="discovery" type="boolean">
