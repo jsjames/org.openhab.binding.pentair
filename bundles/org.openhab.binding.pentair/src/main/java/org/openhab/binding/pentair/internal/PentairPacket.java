@@ -12,7 +12,6 @@
  */
 package org.openhab.binding.pentair.internal;
 
-import org.bouncycastle.util.Arrays;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
@@ -36,7 +35,6 @@ public class PentairPacket {
     protected boolean initialized;
 
     public byte[] buf;
-    public boolean haschecksum = false;
 
     /**
      * Constructor for PentairPacket basic packet.
@@ -59,8 +57,10 @@ public class PentairPacket {
         initialized = true;
     }
 
-    public PentairPacket(byte[] buf, int length) {
+    public PentairPacket(byte[] buf, int l) {
         this.buf = buf;
+
+        initialized = true;
     }
 
     /**
@@ -251,18 +251,22 @@ public class PentairPacket {
         return checksum;
     }
 
-    public void addChecksum() {
+    public byte[] getFullWriteStream() {
         int checksum;
 
-        if (!haschecksum) {
-            buf = Arrays.copyOf(buf, buf.length + 2);
-        }
+        byte[] preamble = { (byte) 0xFF, (byte) 0x00, (byte) 0xFF };
+        byte[] writebuf;
+
+        writebuf = new byte[preamble.length + buf.length + 2];
+
+        System.arraycopy(preamble, 0, writebuf, 0, preamble.length);
+        System.arraycopy(this.buf, 0, writebuf, preamble.length, buf.length);
 
         checksum = calcChecksum();
 
-        buf[buf.length - 1] = (byte) ((checksum >> 8) & 0xFF);
-        buf[buf.length] = (byte) (checksum & 0xFF);
+        writebuf[writebuf.length - 2] = (byte) ((checksum >> 8) & 0xFF);
+        writebuf[writebuf.length - 1] = (byte) (checksum & 0xFF);
 
-        haschecksum = true;
+        return writebuf;
     }
 }

@@ -12,12 +12,9 @@
  */
 package org.openhab.binding.pentair.internal.handler;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -61,8 +58,8 @@ public class PentairIPBridgeHandler extends PentairBaseBridgeHandler {
             Socket socket = new Socket(config.address, config.port);
             this.socket = socket;
 
-            this.setReader(new BufferedInputStream(socket.getInputStream()));
-            this.setWriter(new BufferedOutputStream(socket.getOutputStream()));
+            setInputStream(socket.getInputStream());
+            setOutputStream(socket.getOutputStream());
 
             logger.info("Pentair IPBridge connected to {}:{}", config.address, config.port);
         } catch (UnknownHostException e) {
@@ -77,18 +74,6 @@ public class PentairIPBridgeHandler extends PentairBaseBridgeHandler {
             return -2;
         }
 
-        parser = new Parser();
-        Thread thread = new Thread(parser);
-        this.thread = thread;
-        thread.start();
-
-        if (socket != null && reader != null && writer != null) {
-            updateStatus(ThingStatus.ONLINE);
-        } else {
-            logger.debug("connect: socket, reader or writer is null");
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Unable to connect");
-        }
-
         return 0;
     }
 
@@ -97,37 +82,6 @@ public class PentairIPBridgeHandler extends PentairBaseBridgeHandler {
     protected synchronized void disconnect() {
         logger.debug("PentairIPBridgeHandler: disconnect");
         updateStatus(ThingStatus.OFFLINE);
-
-        if (thread != null) {
-            try {
-                thread.interrupt();
-                thread.join(); // wait for thread to complete
-            } catch (InterruptedException e) {
-                // do nothing
-            }
-            thread = null;
-            parser = null;
-        }
-
-        if (reader.isPresent()) {
-            try {
-                reader.get().close();
-            } catch (IOException e) {
-                logger.debug("disconnect: IOException");
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Error in closing reader");
-            }
-            reader = Optional.empty();
-        }
-
-        if (writer.isPresent()) {
-            try {
-                writer.get().close();
-            } catch (IOException e) {
-                logger.debug("disconnect: IOException");
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Error in closing writer");
-            }
-            writer = Optional.empty();
-        }
 
         if (socket != null) {
             try {
