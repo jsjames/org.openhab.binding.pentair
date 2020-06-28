@@ -22,7 +22,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
  *
  */
 @NonNullByDefault
-public class PentairPacket {
+public class PentairPacket implements Cloneable {
     protected static final char[] HEXARRAY = "0123456789ABCDEF".toCharArray();
 
     public static final int OFFSET = 2;
@@ -52,13 +52,12 @@ public class PentairPacket {
      * @param buf Array of bytes to be used to populate packet.
      */
     public PentairPacket(byte[] buf) {
-        this.buf = buf;
-
-        initialized = true;
+        this(buf, buf.length);
     }
 
     public PentairPacket(byte[] buf, int l) {
-        this.buf = buf;
+        this.buf = new byte[l];
+        System.arraycopy(buf, 0, this.buf, 0, l);
 
         initialized = true;
     }
@@ -268,5 +267,15 @@ public class PentairPacket {
         writebuf[writebuf.length - 1] = (byte) (checksum & 0xFF);
 
         return writebuf;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        PentairPacket p = (PentairPacket) super.clone();
+
+        p.buf = new byte[this.buf.length];
+        System.arraycopy(this.buf, 0, p.buf, 0, this.buf.length);
+
+        return p;
     }
 }

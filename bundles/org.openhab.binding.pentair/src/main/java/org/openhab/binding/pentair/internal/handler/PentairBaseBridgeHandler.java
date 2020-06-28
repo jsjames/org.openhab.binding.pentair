@@ -173,8 +173,7 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler
             pollingjob = scheduler.scheduleWithFixedDelay(new ReconnectIO(), 60, 30, TimeUnit.SECONDS);
         }
 
-        Thread thread = new Thread(parser);
-        this.thread = thread;
+        thread = new Thread(parser);
         thread.start();
 
         if (reader.isPresent() && writer.isPresent()) {
@@ -197,7 +196,7 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler
         });
 
         reader = Optional.of(new BufferedInputStream(inputStream));
-        parser.setReader(inputStream);
+        parser.setInputStream(inputStream);
     }
 
     public void setOutputStream(OutputStream outputStream) {
@@ -221,9 +220,7 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler
         if (thread != null) {
             try {
                 thread.interrupt();
-                if (thread != null) {
-                    thread.join(); // wait for thread to complete
-                }
+                thread.join(); // wait for thread to complete
             } catch (InterruptedException e) {
                 // do nothing
             }
