@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="pentair"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+
+	<thing-type id="intellichem">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="ip_bridge" />
+			<bridge-type-ref id="serial_bridge" />
+		</supported-bridge-type-refs>
+
+		<label>Intellichem</label>
+		<description>Pentair Intellichem</description>
+
+		<channels>
+			<channel id="phreading" typeId="phreadingtype" />
+			<channel id="orpreading" typeId="orpreadingtype" />
+			<channel id="phsetpoint" typeId="phsetpointtype" />
+			<channel id="orpsetpoint" typeId="orpsetpointtype" />
+			<channel id="tank1" typeId="tanktype" />
+			<channel id="tank2" typeId="tanktype" />
+			<channel id="calciumhardness" typeId="calciumhardnesstypte" />
+			<channel id="cyareading" typeId="cyareadingtype" />
+			<channel id="totalalkalinity" typeId="totalalkalinitytype" />
+			<channel id="waterflowalarm" typeId="waterflowalarmtype" />
+			<channel id="mode1" typeId="modetype" />
+			<channel id="mode2" typeId="modetype" />
+			<channel id="saturationindex" typeId="saturationindextype" />
+		</channels>
+
+		<config-description>
+			<parameter name="id" type="integer" required="false">
+				<label>ID</label>
+				<description>The ID of the device (in decimal, not hex)</description>
+				<default>144</default>
+			</parameter>
+		</config-description>
+	</thing-type>
+
+	<channel-type id="phreadingtype">
+		<item-type>Number</item-type>
+		<label>PH Reading</label>
+		<description>Current PH reading.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="orpreadingtype">
+		<item-type>Number</item-type>
+		<label>ORP Reading</label>
+		<description>Current Oxidation Reduction Potential (ORP) reading.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="phsetpointtype">
+		<item-type>Number</item-type>
+		<label>PH Set Point</label>
+		<description>Current PH set point.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="orpsetpointtype">
+		<item-type>Number</item-type>
+		<label>ORP Set Point</label>
+		<description>Oxidation Reduction Potential (ORP) set point.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="tanktype">
+		<item-type>Number</item-type>
+		<label>Tank level</label>
+		<description>Tank level.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="calciumhardnesstypte">
+		<item-type>Number</item-type>
+		<label>Calcium Hardess</label>
+		<description>Calcium hardness PPM (mg/L).</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="cyareadingtype">
+		<item-type>Number</item-type>
+		<label>CYA Reading</label>
+		<description>Cyanuric acid reading.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="totalalkalinitytype">
+		<item-type>Number</item-type>
+		<label>Total Alkalinity</label>
+		<description>Total Alkalinity reading.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="waterflowalarmtype">
+		<item-type>Switch</item-type>
+		<label>Water flow alarm</label>
+		<description>Water flow alarm (on = no water flow).</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="modetype">
+		<item-type>Number</item-type>
+		<label>Intellichem mode</label>
+		<description>Intellichem mode</description>
+		<state readOnly="true" />
+	</channel-type>
+
+	<channel-type id="saturationindextype">
+		<item-type>Number</item-type>
+		<label>Saturation Index</label>
+		<description>Saturation Index.</description>
+		<state readOnly="true" />
+	</channel-type>
+
+</thing:thing-descriptions>
