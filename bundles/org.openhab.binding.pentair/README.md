@@ -110,8 +110,7 @@ This configuration setting will instruct the binding to automatically update the
 
 | Channel Group                     | Channel   | Type   |    | Description                                              |
 | :------------------------------:  | :-------: | :----: | :-: | :------------------------------------------------------- |
-| pool, spa, aux[1-8], feature[1-8] | switch    | Switch | RW | Indicates the particulcar circuit or feature is on or off.  |
-| "                                 | minsrun   | Number | RW | Number of minutes circuit or feature has been on since binding start.  Does not persist across restarts. |  
+| pool, spa, aux[1-8], feature[1-8] | switch    | Switch | RW | Indicates the particulcar circuit or feature is on or off.  | 
 | "                                 | name      | String | R  | Name of circuit |
 | "                                 | feature   | String | R  | Feature of ciruit |
 | poolheat, spaheat                 | setpoint  | Number:Temperature | RW | Temperature setpoint |

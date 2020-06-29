@@ -70,8 +70,7 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
     private final Logger logger = LoggerFactory.getLogger(PentairControllerHandler.class);
     @Nullable
     protected ScheduledFuture<?> syncTimeJob;
-    @Nullable
-    protected ScheduledFuture<?> updateMinsRunJob;
+
     private int preambleByte = -1; // Byte to use after 0xA5 in communicating to controller. Not sure why this changes,
                                    // but it requires to be in sync and up-to-date
     private boolean waitStatusForOnline = false; // To manage online status, only go online when we received first
@@ -190,6 +189,7 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
 
     public void finishOnline() {
         onlineController = this;
+        updateStatus(ThingStatus.ONLINE);
 
         // setup timer to sync time
         Runnable runnable = new Runnable() {
@@ -210,22 +210,6 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
         // setup syncTimeJob to run once a day, initial time to sync is 3 minutes after controller goes online. This is
         // to prevent collision with main thread queries on initial startup
         syncTimeJob = scheduler.scheduleWithFixedDelay(runnable, 3, 24 * 60 * 60, TimeUnit.MINUTES);
-
-        Runnable countMinsRun = new Runnable() {
-            @Override
-            public void run() {
-                logger.debug("Incrementing minutes run");
-                for (int i = 0; i < NUMCIRCUITS; i++) {
-                    if (circuits[i].on) {
-                        circuits[i].minsrun++;
-                        updateState(circuits[i].getGroup() + "#" + CONTROLLER_CIRCUITMINSRUN,
-                                new DecimalType(circuits[i].minsrun));
-                    }
-                }
-            }
-        };
-
-        updateMinsRunJob = scheduler.scheduleAtFixedRate(countMinsRun, 1, 1, TimeUnit.MINUTES);
 
         Runnable queryinfo = new Runnable() {
             @Override
@@ -255,8 +239,6 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
         };
         Thread thread = new Thread(queryinfo);
         thread.start();
-
-        updateStatus(ThingStatus.ONLINE);
     }
 
     public void goOffline(ThingStatusDetail detail) {
@@ -264,10 +246,6 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
 
         if (syncTimeJob != null) {
             syncTimeJob.cancel(true);
-        }
-
-        if (updateMinsRunJob != null) {
-            updateMinsRunJob.cancel(true);
         }
 
         onlineController = null;
@@ -407,14 +385,6 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
                     }
                     break;
                 }
-                case CONTROLLER_CIRCUITMINSRUN: {
-                    PentairControllerCircuit pcc = getPCC(groupId);
-
-                    if (pcc != null && (pcc.getMinsRun() != 0)) {
-                        updateState(channelUID, new DecimalType(pcc.getMinsRun()));
-                    }
-                    break;
-                }
             }
 
             return;
@@ -428,15 +398,6 @@ public class PentairControllerHandler extends PentairBaseThingHandler {
 
                 boolean state = ((OnOffType) command) == OnOffType.ON;
                 circuitSwitch(circuit, state);
-
-                break;
-            }
-            case CONTROLLER_CIRCUITMINSRUN: {
-                int circuit = getCircuitNumber(groupId);
-
-                logger.debug("Update Mins Run {}", ((Number) command).intValue());
-
-                circuits[circuit - 1].minsrun = ((Number) command).intValue();
 
                 break;
             }

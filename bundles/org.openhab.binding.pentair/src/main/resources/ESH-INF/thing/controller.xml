@@ -142,7 +142,6 @@
 		<description>Circuit</description>
 		<channels>
 			<channel id="switch" typeId="auxswitchtype" />
-			<channel id="minsrun" typeId="minsruntype" />
 			<channel id="name" typeId="circuitnametype" />
 			<channel id="function" typeId="circuitfunctiontype" />
 		</channels>
@@ -153,7 +152,6 @@
 		<description>Features</description>
 		<channels>
 			<channel id="switch" typeId="auxswitchtype" />
-			<channel id="minsrun" typeId="minsruntype" />
 			<channel id="name" typeId="circuitnametype" />
 			<channel id="function" typeId="circuitfunctiontype" />
 		</channels>
@@ -223,13 +221,6 @@
 		<item-type>Switch</item-type>
 		<label>Auxillary Switch</label>
 		<description>Auxillary Switch</description>
-	</channel-type>
-
-	<channel-type id="minsruntype">
-		<item-type>Number</item-type>
-		<label>Minutes run</label>
-		<description>Cumulative minutes run</description>
-		<state pattern="%d %unit%" />
 	</channel-type>
 
 	<channel-type id="circuitnametype">
