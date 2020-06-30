@@ -17,6 +17,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +47,46 @@ public class PentairParserTest {
         String out = in.replaceAll("\\s", "");
 
         return javax.xml.bind.DatatypeConverter.parseHexBinary(out);
+    }
+
+    private static int hexToBin(byte in) {
+        if ('0' <= in && in <= '9') {
+            return in - '0';
+        }
+        if ('A' <= in && in <= 'F') {
+            return in - 'A' + 10;
+        }
+        if ('a' <= in && in <= 'f') {
+            return in - 'a' + 10;
+        }
+        return -1;
+    }
+
+    public static byte[] parsehex(byte[] in) {
+        byte[] out = new byte[in.length / 2 + 1];
+
+        int i = 0;
+        int length = 0;
+        while (i < in.length) {
+            int h = hexToBin(in[i]);
+            i++;
+            if (h == -1) {
+                continue;
+            }
+
+            if (i >= in.length) {
+                break;
+            }
+            int l = hexToBin(in[i]);
+            i++;
+            if (l == -1) {
+                continue;
+            }
+
+            out[length++] = (byte) (h * 16 + l);
+        }
+
+        return out;
     }
 
     //@formatter:off
@@ -342,7 +385,7 @@ public class PentairParserTest {
     ArgumentCaptor<PentairPacket> packets;
 
     @Captor
-    ArgumentCaptor<PentairPacket> packetsIntellichlor;
+    ArgumentCaptor<PentairIntelliChlorPacket> packetsIntellichlor;
 
     Thread thread;
 
@@ -405,8 +448,6 @@ public class PentairParserTest {
     public void test2() throws InterruptedException {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(stream2, 0, stream2.length);
 
-        logger.debug("THIS IS A DEBUG");
-
         parser.setInputStream(inputStream);
 
         thread = new Thread(parser);
@@ -429,13 +470,51 @@ public class PentairParserTest {
 
         assertThat(allPackets.size(), equalTo(281));
 
-        List<PentairPacket> allPacketsIntellichlor = new ArrayList<PentairPacket>();
+        List<PentairIntelliChlorPacket> allPacketsIntellichlor = new ArrayList<PentairIntelliChlorPacket>();
         allPacketsIntellichlor = packetsIntellichlor.getAllValues();
 
         logger.info("Number of Intellichlor packets: {}", allPacketsIntellichlor.size());
 
         assertThat(allPacketsIntellichlor.size(), equalTo(3));
+    }
 
+    @Test
+    public void parseEasyTouch8() throws IOException, InterruptedException {
+        byte[] array = parsehex(Files.readAllBytes(Paths.get("src/test/data/easytouch8.log")));
+
+        logger.info("parseEasyTouch8");
+
+        // logger.debug("{}", javax.xml.bind.DatatypeConverter.printHexBinary(array));
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(array, 0, array.length);
+        parser.setInputStream(inputStream);
+
+        thread = new Thread(parser);
+        thread.start();
+
+        Thread.sleep(2000);
+
+        thread.interrupt();
+
+        thread.join();
+        thread = null;
+
+        verify(callback, atLeast(1)).onPentairPacket(packets.capture());
+        verify(callback, atLeast(1)).onIntelliChlorPacket(packetsIntellichlor.capture());
+
+        List<PentairPacket> allPackets = new ArrayList<PentairPacket>();
+        allPackets = packets.getAllValues();
+
+        logger.info("Number of Pentair packets: {}", allPackets.size());
+
+        assertThat(allPackets.size(), equalTo(1032));
+
+        List<PentairIntelliChlorPacket> allPacketsIntellichlor = new ArrayList<PentairIntelliChlorPacket>();
+        allPacketsIntellichlor = packetsIntellichlor.getAllValues();
+
+        logger.info("Number of Intellichlor packets: {}", allPacketsIntellichlor.size());
+
+        assertThat(allPacketsIntellichlor.size(), equalTo(36));
     }
 
 }

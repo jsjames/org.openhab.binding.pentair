@@ -53,7 +53,7 @@ public class PentairParser implements Runnable {
     public interface CallbackPentairParser {
         public void onPentairPacket(PentairPacket p);
 
-        public void onIntelliChlorPacket(PentairPacket p);
+        public void onIntelliChlorPacket(PentairIntelliChlorPacket p);
     };
 
     private Optional<CallbackPentairParser> callback = Optional.empty();
@@ -151,7 +151,7 @@ public class PentairParser implements Runnable {
                 c = getByte(parserstate);
 
                 switch (parserstate) {
-                    case WAIT_SOC:
+                    case WAIT_SOC: // will parse both FF FF FF ... 00
                         if (c == 0xFF) { // for CMD_PENTAIR, we need at lease one 0xFF
                             do {
                                 c = getByte(parserstate);
@@ -185,27 +185,27 @@ public class PentairParser implements Runnable {
                         }
 
                         length = (buf[5] & 0xFF);
-                        if (length == 0) {
-                            logger.info("Command length of 0");
-                        }
                         if (length > 50) {
                             logger.info("Received packet longer than 50 bytes: {}", length);
                             break;
                         }
+
+                        // buf should contain A5 00 0F 10 02 1D (A5 00 D S A L)
                         if (getBytes(buf, 6, length) != length) { // read remaining packet
                             break;
                         }
 
                         chksum = 0;
                         for (i = 0; i < length + 6; i++) {
-                            chksum += buf[i] & 0xFF;
+                            chksum += (buf[i] & 0xFF);
                         }
 
-                        c = getByte(parserstate) << 8;
-                        c += getByte(parserstate);
+                        c = (getByte(parserstate) & 0xFF) << 8;
+                        c += (getByte(parserstate) & 0xFF);
 
                         if (c != chksum) {
-                            logger.info("Checksum error: {}-{}", chksum, PentairPacket.bytesToHex(buf, length + 6));
+                            logger.info("Checksum error: {}!={}-{}", chksum, c,
+                                    PentairPacket.bytesToHex(buf, length + 6));
                             break;
                         }
 
@@ -215,47 +215,52 @@ public class PentairParser implements Runnable {
                         callback.get().onPentairPacket(p);
 
                         break;
-                    case CMD_INTELLICHLOR:
+                    case CMD_INTELLICHLOR: // 10 02 00 12 89 90 xx 10 03
                         parserstate = ParserState.WAIT_SOC;
 
                         buf[0] = 0x10; // 0x10 is included in checksum
-                        if (c != (byte) 0x02) {
+                        buf[1] = (byte) c;
+
+                        if (buf[1] != (byte) 0x02) {
                             break;
                         }
 
-                        buf[1] = 0x2;
-                        length = 3;
-                        // assume 3 byte command, plus 1 checksum, plus 0x10, 0x03
-                        if (getBytes(buf, 2, 6) != 6) {
+                        buf[2] = (byte) getByte(parserstate); // Destination
+                        buf[3] = (byte) getByte(parserstate); // Command
+
+                        length = PentairIntelliChlorPacket.getPacketDataLength(buf[3] & 0xFF);
+                        if (length == -1) {
+                            logger.debug("IntelliChlor Packet unseen: command - {}", buf[3] & 0xFF);
                             break;
                         }
 
-                        // Check to see if this is a 3 or 4 byte command
-                        if ((buf[6] != (byte) 0x10 || buf[7] != (byte) 0x03)) {
-                            length = 4;
+                        // data bytes + 1 checksum + 0x10, 0x03
+                        if (getBytes(buf, 4, length + 3) != length + 3) {
+                            break;
+                        }
 
-                            buf[8] = (byte) getByte(parserstate);
-                            if ((buf[7] != (byte) 0x10) && (buf[8] != (byte) 0x03)) {
-                                logger.debug("Invalid Intellichlor command: {}",
-                                        PentairPacket.bytesToHex(buf, length + 6));
-                                break; // invalid command
-                            }
+                        // Check to see if closing command is 0x10 and and 0x03
+                        if ((buf[5 + length] != (byte) 0x10 || buf[5 + length + 1] != (byte) 0x03)) {
+                            logger.debug("Invalid Intellichlor command: {}",
+                                    PentairPacket.bytesToHex(buf, 4 + length + 3));
+                            break; // invalid command
                         }
 
                         chksum = 0;
-                        for (i = 0; i < length + 2; i++) {
+                        for (i = 0; i < 4 + length; i++) {
                             chksum += buf[i] & 0xFF;
                         }
 
-                        c = buf[length + 2] & 0xFF;
+                        c = buf[4 + length] & 0xFF;
                         if (c != (chksum & 0xFF)) { // make sure it matches chksum
                             logger.debug("Invalid Intellichlor checksum: {}",
-                                    PentairPacket.bytesToHex(buf, length + 6));
+                                    PentairPacket.bytesToHex(buf, 4 + length + 3));
                             break;
                         }
 
-                        PentairPacket pic = new PentairPacket(buf, length);
+                        PentairIntelliChlorPacket pic = new PentairIntelliChlorPacket(buf, 4 + length);
 
+                        logger.debug("IntelliChlor Packet: {}", pic.toString());
                         callback.get().onIntelliChlorPacket(pic);
 
                         break;

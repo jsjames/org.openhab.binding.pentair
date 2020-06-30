@@ -24,8 +24,12 @@
 			<channel id="cleancell" typeId="cleancelltype" />
 			<channel id="lowvoltage" typeId="lowvoltagetype" />
 			<channel id="lowwatertemp" typeId="lowwatertemptype" />
-			<channel id="commerror" typeId="commerrortype" />
 		</channels>
+
+		<properties>
+			<property name="version">Version</property>
+			<property name="model">Model</property>
+		</properties>
 	</thing-type>
 
 	<channel-type id="saltoutputtype">
@@ -97,11 +101,5 @@
 		<description>Water temperature is too low for chlorine generation.</description>
 		<state readOnly="true" />
 	</channel-type>
-
-	<channel-type id="commerrortype">
-		<item-type>Switch</item-type>
-		<label>Comm Error</label>
-		<description>Communication error with Chlorinator.</description>
-		<state readOnly="true" />
-	</channel-type>
+	
 </thing:thing-descriptions>

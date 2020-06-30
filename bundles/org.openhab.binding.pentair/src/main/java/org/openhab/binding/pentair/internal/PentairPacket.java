@@ -232,7 +232,7 @@ public class PentairPacket implements Cloneable {
      */
     @Override
     public String toString() {
-        return bytesToHex(buf, getLength() + 6);
+        return bytesToHex(buf, getBufLength());
     }
 
     /**

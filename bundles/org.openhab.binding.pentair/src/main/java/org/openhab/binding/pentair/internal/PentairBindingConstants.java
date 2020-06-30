@@ -114,6 +114,9 @@ public class PentairBindingConstants {
     public static final String CONTROLLER_SCHEDULEEND = "end";
 
     // List of Intellichlor channel ids
+    public static final String INTELLICHLOR_PROPERTYVERSION = "version";
+    public static final String INTELLICHLOR_PROPERTYMODEL = "model";
+
     public static final String INTELLICHLOR_SALTOUTPUT = "saltoutput";
     public static final String INTELLICHLOR_SALINITY = "salinity";
     public static final String INTELLICHLOR_OK = "ok";

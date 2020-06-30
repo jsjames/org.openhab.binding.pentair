@@ -38,6 +38,7 @@ import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.openhab.binding.pentair.internal.PentairDiscoveryService;
+import org.openhab.binding.pentair.internal.PentairIntelliChlorPacket;
 import org.openhab.binding.pentair.internal.PentairPacket;
 import org.openhab.binding.pentair.internal.PentairParser;
 import org.slf4j.Logger;
@@ -326,7 +327,7 @@ public abstract class PentairBaseBridgeHandler extends BaseBridgeHandler
     }
 
     @Override
-    public void onIntelliChlorPacket(PentairPacket p) {
+    public void onIntelliChlorPacket(PentairIntelliChlorPacket p) {
         @Nullable
         PentairBaseThingHandler thinghandler;
 
