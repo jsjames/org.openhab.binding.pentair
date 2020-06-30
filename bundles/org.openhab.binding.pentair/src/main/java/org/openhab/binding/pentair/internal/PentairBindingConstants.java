@@ -80,7 +80,6 @@ public class PentairBindingConstants {
     public static final String CONTROLLER_AUX8CIRCUIT = "aux8";
 
     public static final String CONTROLLER_CIRCUITSWITCH = "switch";
-    public static final String CONTROLLER_CIRCUITMINSRUN = "minsrun";
     public static final String CONTROLLER_CIRCUITNAME = "name";
     public static final String CONTROLLER_CIRCUITFUNCTION = "function";
 

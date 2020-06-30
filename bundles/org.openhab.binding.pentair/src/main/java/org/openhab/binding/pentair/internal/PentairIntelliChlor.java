@@ -66,9 +66,9 @@ public class PentairIntelliChlor {
                 saltoutput = (p.buf[SALTOUTPUT] & 0xFF);
                 break;
             case 0x12:
-                salinity = (p.buf[SALINITY] & 0xFF);
+                salinity = (p.buf[SALINITY] & 0xFF) * 50;
 
-                ok = (p.buf[STATUS] == 0) || (p.buf[STATUS] == 0x80);
+                ok = ((p.buf[STATUS] & 0xFF) == 0) || ((p.buf[STATUS] & 0xFF) == 0x80);
                 lowflow = (p.buf[STATUS] & 0x01) != 0;
                 lowsalt = (p.buf[STATUS] & 0x02) != 0;
                 verylowsalt = (p.buf[STATUS] & 0x04) != 0;

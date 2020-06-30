@@ -37,7 +37,6 @@ public class PentairIntelliChemTest {
 
         pic.parsePacket(p1);
 
-        System.out.println(pic.toString());
         assertThat(pic.phreading, equalTo(7.70));
         assertThat(pic.orpreading, equalTo(675));
         assertThat(pic.phsetpoint, equalTo(7.20));
@@ -51,15 +50,11 @@ public class PentairIntelliChemTest {
         assertThat(pic.mode1, equalTo(0x06));
         assertThat(pic.mode2, equalTo(0xA5));
 
-        System.out.format("Calcium Hardness: %f\n", pic.calcCalciumHardnessFactor());
         assertThat(pic.calcCalciumHardnessFactor(), equalTo(1.0));
-        System.out.format("Corrected Alkalinity: %f\n", pic.calcCorrectedAlkalinity());
-        System.out.format("Saturation Index: %f\n", pic.calcSaturationIndex());
 
         PentairPacket p2 = new PentairPacket(ichempacket2, ichempacket2.length);
         pic.parsePacket(p2);
 
-        System.out.println(pic.toString());
         assertThat(pic.phreading, equalTo(7.39));
         assertThat(pic.orpreading, equalTo(687));
         assertThat(pic.phsetpoint, equalTo(7.50));
@@ -73,10 +68,7 @@ public class PentairIntelliChemTest {
         assertThat(pic.mode1, equalTo(0x65));
         assertThat(pic.mode2, equalTo(0x20));
 
-        System.out.format("Calcium Hardness: %f\n", pic.calcCalciumHardnessFactor());
         assertThat(pic.calcCalciumHardnessFactor(), equalTo(2.2));
-        System.out.format("Corrected Alkalinity %f\n", pic.calcCorrectedAlkalinity());
-        System.out.format("Saturation Index: %f\n", pic.calcSaturationIndex());
     }
 
 }

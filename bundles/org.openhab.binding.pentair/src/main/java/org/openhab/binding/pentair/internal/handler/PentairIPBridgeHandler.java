@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
  * @author Jeff James - Initial contribution
  *
  */
+
 @NonNullByDefault
 public class PentairIPBridgeHandler extends PentairBaseBridgeHandler {
     private final Logger logger = LoggerFactory.getLogger(PentairIPBridgeHandler.class);

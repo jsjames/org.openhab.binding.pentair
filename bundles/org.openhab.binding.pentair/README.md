@@ -27,7 +27,10 @@ Once you have the interface connected to your system, it is best to test basic c
 Note the protocol is a binary protocol (not ASCII text based) and in order to view the communication packets, one must use a program capable of a binary/HEX mode.
 If connected properly, you will see a periodic traffic with packets staring with FF00FFA5.
 This is the preamble for Pentair's communication packet.
+
 After you see this traffic, you can proceed to configuring the Pentair binding in openHAB.
+
+Note: Many adapters use A and B to represent Data+ and Data-. There is no reliable standard for determining which is Data+ and Data-. If you connect the system in reverse, you will still see serial data, however it will be corrupted. Look at your data coming from your device and look for a repeated "FFa5". If you don't see that preamble reliably, you may try switching your data lines."
 
 #### USB/Serial interface
 
@@ -264,7 +267,8 @@ Setting up RS485 and basic protocol - https://www.sdyoung.com/home/decoding-the-
 ser2sock GitHub - https://github.com/nutechsoftware/ser2sock
 nodejs-poolController - https://github.com/tagyoureit/nodejs-poolController
 
-## Updates in 2.5.6
+## Updates in 2.5.7
+
 Added automotic discovery of devices
 EasyTouch thing has been renamed to a more generic Controller
 Controller makes liberal use of channel groups to better organize channels
@@ -275,6 +279,7 @@ Added support for IntelliBrite color selection
 Added support for UOM for temperature and pump power.
 Improved robustness of communication on RS485 bus
 Move serial implementation to openhab-transport-serial from gnu.io
+Added unit testing
 
 ## Future Enhancements
 

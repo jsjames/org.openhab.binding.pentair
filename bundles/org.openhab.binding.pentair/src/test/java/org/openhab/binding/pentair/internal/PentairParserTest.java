@@ -309,7 +309,8 @@ public class PentairParserTest {
                     + "FF FF FF FF FF FF FF FF 00 FF A5 10 22 10 01 01 86 01 6F"
                     + "FF FF FF FF FF FF FF FF 00 FF A5 10 0F 10 02 1D 14 1E 20 00 00 00 00 00 00 00 03 00 40 04 39 39"
                     + "20 00 3A 38 00 00 04 00 00 82 BF 00 0D 03 E2"
-                    + "FF"
+                    + "FF 10 02 50 11 50 C3 10 03"
+                    + "10 02 00 12 67 80 0B 10 03"
                     + "FF FF FF FF FF FF FF FF 00 FF A5 10 10 20 D8 01 02 01 C0"
                     + "FF FF FF FF FF FF FF FF 00 FF A5 10 0F 10 18 1F 02 80 03 02 00 0C 03 05 05 0D 07 0E 0B 00 03 00"
                     + "03 00 03 00 03 0C E8 DC D0 B8 E8 E8 E8 E8 1C 08 F8"
@@ -339,6 +340,9 @@ public class PentairParserTest {
 
     @Captor
     ArgumentCaptor<PentairPacket> packets;
+
+    @Captor
+    ArgumentCaptor<PentairPacket> packetsIntellichlor;
 
     Thread thread;
 
@@ -416,25 +420,21 @@ public class PentairParserTest {
         thread = null;
 
         verify(callback, atLeast(1)).onPentairPacket(packets.capture());
+        verify(callback, atLeast(1)).onIntelliChlorPacket(packetsIntellichlor.capture());
 
         List<PentairPacket> allPackets = new ArrayList<PentairPacket>();
         allPackets = packets.getAllValues();
 
-        logger.info("Number of packets: {}", allPackets.size());
+        logger.info("Number of Pentair packets: {}", allPackets.size());
 
-        /*
-         * assertThat(allPackets.size(), equalTo(3));
-         *
-         * logger.info("1: {}", allPackets.get(0).getAction());
-         * logger.info("2: {}", allPackets.get(1).getAction());
-         * logger.info("3: {}", allPackets.get(2).getAction());
-         *
-         * assertThat(allPackets.get(0).getAction(), equalTo(0x02));
-         *
-         * assertThat(allPackets.get(1).getAction(), equalTo(0x12));
-         *
-         * assertThat(allPackets.get(2).getAction(), equalTo(0x02));
-         */
+        assertThat(allPackets.size(), equalTo(281));
+
+        List<PentairPacket> allPacketsIntellichlor = new ArrayList<PentairPacket>();
+        allPacketsIntellichlor = packetsIntellichlor.getAllValues();
+
+        logger.info("Number of Intellichlor packets: {}", allPacketsIntellichlor.size());
+
+        assertThat(allPacketsIntellichlor.size(), equalTo(3));
 
     }
 

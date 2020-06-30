@@ -26,14 +26,6 @@
 			<channel id="lowwatertemp" typeId="lowwatertemptype" />
 			<channel id="commerror" typeId="commerrortype" />
 		</channels>
-
-		<config-description>
-			<parameter name="id" type="integer" required="false">
-				<label>ID</label>
-				<description>The ID of the device (in decimal, not hex)</description>
-				<default>96</default>
-			</parameter>
-		</config-description>
 	</thing-type>
 
 	<channel-type id="saltoutputtype">

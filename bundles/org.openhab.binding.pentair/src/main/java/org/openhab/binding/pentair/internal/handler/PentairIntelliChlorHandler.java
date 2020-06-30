@@ -169,6 +169,13 @@ public class PentairIntelliChlorHandler extends PentairBaseThingHandler {
     public void processPacketFrom(PentairPacket p) {
 
         pic.parsePacket(p);
+
+        if (waitStatusForOnline) { // Only go online after first response from the Intellichlor
+            updateStatus(ThingStatus.ONLINE);
+            onlineChlorinator = this;
+            waitStatusForOnline = false;
+        }
+
         switch (p.buf[PentairIntelliChlor.ACTION]) {
             case 0x11: // set salt output % command
                 pic.parsePacket(p);
@@ -176,11 +183,6 @@ public class PentairIntelliChlorHandler extends PentairBaseThingHandler {
                 logger.debug("Intellichlor set output % {}", pic.saltoutput);
                 break;
             case 0x12: // response to set salt output
-                if (waitStatusForOnline) { // Only go online after first response from the Intellichlor
-                    updateStatus(ThingStatus.ONLINE);
-                    onlineChlorinator = this;
-                    waitStatusForOnline = false;
-                }
 
                 pic.parsePacket(p);
 
